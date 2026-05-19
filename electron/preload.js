@@ -1,0 +1,53 @@
+const { contextBridge, ipcRenderer } = require('electron')
+
+contextBridge.exposeInMainWorld('golem', {
+  db: {
+    listConversations:  ()                        => ipcRenderer.invoke('db:listConversations'),
+    getConversation:    (id)                      => ipcRenderer.invoke('db:getConversation', id),
+    createConversation: (title, model, sigilId)   => ipcRenderer.invoke('db:createConversation', title, model, sigilId),
+    renameConversation: (id, title)               => ipcRenderer.invoke('db:renameConversation', id, title),
+    deleteConversation: (id)                      => ipcRenderer.invoke('db:deleteConversation', id),
+    pinConversation:    (id)                      => ipcRenderer.invoke('db:pinConversation', id),
+    unpinConversation:  (id)                      => ipcRenderer.invoke('db:unpinConversation', id),
+    getMessages:        (convId)                  => ipcRenderer.invoke('db:getMessages', convId),
+    addMessage:         (convId, role, content)   => ipcRenderer.invoke('db:addMessage', convId, role, content),
+    updateMessage:      (id, content)             => ipcRenderer.invoke('db:updateMessage', id, content),
+    deleteMessage:      (id)                      => ipcRenderer.invoke('db:deleteMessage', id),
+    getSetting:         (key, fallback)           => ipcRenderer.invoke('db:getSetting', key, fallback),
+    setSetting:         (key, value)              => ipcRenderer.invoke('db:setSetting', key, value),
+    listSigils:         ()                        => ipcRenderer.invoke('db:listSigils'),
+    createSigil:        (name, content)           => ipcRenderer.invoke('db:createSigil', name, content),
+    updateSigil:        (id, name, content)       => ipcRenderer.invoke('db:updateSigil', id, name, content),
+    deleteSigil:        (id)                      => ipcRenderer.invoke('db:deleteSigil', id),
+  },
+  memory: {
+    load: ()        => ipcRenderer.invoke('memory:load'),
+    save: (content) => ipcRenderer.invoke('memory:save', content),
+  },
+  dialog: {
+    openFile: () => ipcRenderer.invoke('dialog:openFile'),
+  },
+  ollama: {
+    listModels:    ()        => ipcRenderer.invoke('ollama:listModels'),
+    ensureRunning: ()        => ipcRenderer.invoke('ollama:ensureRunning'),
+    pullModel:     (name)    => ipcRenderer.invoke('ollama:pullModel', name),
+    deleteModel:   (name)    => ipcRenderer.invoke('ollama:deleteModel', name),
+    startStream:   (payload) => ipcRenderer.invoke('ollama:startStream', payload),
+    stopStream:    ()        => ipcRenderer.send('ollama:stopStream'),
+    onChunk:       (cb)      => ipcRenderer.on('ollama:chunk', (_, chunk) => cb(chunk)),
+    onStreamEnd:   (cb)      => ipcRenderer.on('ollama:streamEnd', (_, err) => cb(err)),
+    offChunk:      ()        => ipcRenderer.removeAllListeners('ollama:chunk'),
+    offStreamEnd:  ()        => ipcRenderer.removeAllListeners('ollama:streamEnd'),
+    onPullProgress:  (cb)    => ipcRenderer.on('ollama:pullProgress', (_, data) => cb(data)),
+    offPullProgress: ()      => ipcRenderer.removeAllListeners('ollama:pullProgress'),
+  },
+  window: {
+    setSize:          (w, h) => ipcRenderer.send('window:setSize', w, h),
+    minimize:         ()     => ipcRenderer.send('window:minimize'),
+    maximize:         ()     => ipcRenderer.send('window:maximize'),
+    close:            ()     => ipcRenderer.send('window:close'),
+    isMaximized:      ()     => ipcRenderer.invoke('window:isMaximized'),
+    onMaximizeChange: (cb)   => ipcRenderer.on('window:maximizeChange', (_, v) => cb(v)),
+    offMaximizeChange: ()    => ipcRenderer.removeAllListeners('window:maximizeChange'),
+  },
+})

@@ -1,8 +1,12 @@
 # Data (runtime-generated, never commit)
-data/*.db
-data/memory.txt
+data/
 
-# Python
+# Node
+node_modules/
+dist/
+dist-electron/
+
+# Python (legacy)
 __pycache__/
 *.pyc
 *.pyo
@@ -10,7 +14,6 @@ __pycache__/
 .venv/
 venv/
 *.egg-info/
-dist/
 build/
 
 # Environment
@@ -25,3 +28,8 @@ build/
 # OS
 Thumbs.db
 .DS_Store
+
+# Local dev artifacts
+.claude/
+*.log
+run_check.bat

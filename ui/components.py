@@ -19,7 +19,7 @@ def message_bubble(role: str, content: str, on_copy=None) -> ft.Container:
             selectable=True,
             extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
             code_theme="atom-one-dark",
-            code_style=ft.TextStyle(font_family="Cascadia Code, Consolas, monospace"),
+            code_style_sheet=ft.MarkdownStyleSheet(code_text_style=ft.TextStyle(font_family="Cascadia Code, Consolas, monospace")),
             on_tap_link=lambda e: webbrowser.open(e.data),
         )
 
@@ -29,7 +29,7 @@ def message_bubble(role: str, content: str, on_copy=None) -> ft.Container:
         icon_color=ft.Colors.with_opacity(0.5, ft.Colors.WHITE),
         tooltip="Copy",
         on_click=lambda _: on_copy(content) if on_copy else None,
-        style=ft.ButtonStyle(padding=ft.padding.all(4)),
+        style=ft.ButtonStyle(padding=ft.Padding.all(4)),
         visible=True,
     )
 
@@ -40,8 +40,8 @@ def message_bubble(role: str, content: str, on_copy=None) -> ft.Container:
             tight=True,
         ),
         bgcolor=ft.Colors.with_opacity(0.15, ft.Colors.WHITE) if is_user else ft.Colors.with_opacity(0.06, ft.Colors.WHITE),
-        border_radius=ft.border_radius.all(12),
-        padding=ft.padding.symmetric(horizontal=16, vertical=12),
+        border_radius=ft.BorderRadius.all(12),
+        padding=ft.Padding.symmetric(horizontal=16, vertical=12),
         width=None,
     )
 
@@ -58,12 +58,12 @@ def message_bubble(role: str, content: str, on_copy=None) -> ft.Container:
 def model_dropdown(models: list[str], current: str, on_change) -> ft.Dropdown:
     return ft.Dropdown(
         value=current,
-        options=[ft.dropdown.Option(m) for m in models],
-        on_change=on_change,
+        options=[ft.dropdown.Option(key=m, text=m) for m in models],
+        on_select=on_change,
         border_color=ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
         focused_border_color=ft.Colors.BLUE_400,
         text_size=13,
         dense=True,
-        content_padding=ft.padding.symmetric(horizontal=10, vertical=4),
+        content_padding=ft.Padding.symmetric(horizontal=10, vertical=4),
         width=220,
     )
