@@ -9,7 +9,7 @@ class SettingsDialog(ft.AlertDialog):
             title=ft.Text("Settings"),
             modal=True,
         )
-        self.page = page
+        self._pg = page
         self.models = models
         self.on_save_cb = on_save
 
@@ -20,26 +20,29 @@ class SettingsDialog(ft.AlertDialog):
             max_lines=16,
             label="Personal Memory",
             hint_text="Facts about you injected into every conversation...",
-            border_color=ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
-            focused_border_color=ft.Colors.BLUE_400,
+            border_color=ft.Colors.OUTLINE,
+            focused_border_color=ft.Colors.PRIMARY,
         )
 
         current_model = db.get_setting("default_model", models[0] if models else "")
         self._model_dd = ft.Dropdown(
             label="Default Model",
             value=current_model,
-            options=[ft.dropdown.Option(m) for m in models],
-            border_color=ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
-            focused_border_color=ft.Colors.BLUE_400,
+            options=[ft.dropdown.Option(key=m, text=m) for m in models],
+            border_color=ft.Colors.OUTLINE,
+            focused_border_color=ft.Colors.PRIMARY,
         )
 
         current_theme = db.get_setting("theme", "dark")
         self._theme_dd = ft.Dropdown(
             label="Theme",
             value=current_theme,
-            options=[ft.dropdown.Option("dark"), ft.dropdown.Option("light")],
-            border_color=ft.Colors.with_opacity(0.2, ft.Colors.WHITE),
-            focused_border_color=ft.Colors.BLUE_400,
+            options=[
+                ft.dropdown.Option(key="dark",  text="Dark"),
+                ft.dropdown.Option(key="light", text="Light"),
+            ],
+            border_color=ft.Colors.OUTLINE,
+            focused_border_color=ft.Colors.PRIMARY,
         )
 
         self.content = ft.Container(
@@ -50,20 +53,23 @@ class SettingsDialog(ft.AlertDialog):
                     ft.Divider(),
                     ft.Text("About", weight=ft.FontWeight.BOLD),
                     ft.Text("Golem v0.1.0 — local Ollama chat frontend", size=12),
-                    ft.Text(f"DB: {db.DB_PATH}", size=11, color=ft.Colors.with_opacity(0.5, ft.Colors.WHITE)),
-                    ft.Text(f"Conversations: {db.get_conversation_count()}", size=11, color=ft.Colors.with_opacity(0.5, ft.Colors.WHITE)),
+                    ft.Text(f"DB: {db.DB_PATH}", size=11,
+                            color=ft.Colors.ON_SURFACE_VARIANT),
+                    ft.Text(f"Conversations: {db.get_conversation_count()}", size=11,
+                            color=ft.Colors.ON_SURFACE_VARIANT),
                 ],
                 spacing=12,
                 tight=True,
                 scroll=ft.ScrollMode.AUTO,
             ),
             width=560,
-            padding=ft.padding.only(top=8),
+            padding=ft.Padding.only(top=8),
         )
 
         self.actions = [
-            ft.TextButton("Cancel", on_click=lambda _: self._close()),
-            ft.ElevatedButton("Save", on_click=self._save, style=ft.ButtonStyle(bgcolor=ft.Colors.BLUE_700)),
+            ft.TextButton(content="Cancel", on_click=lambda _: self._pg.pop_dialog()),
+            ft.ElevatedButton(content="Save", on_click=self._save,
+                              style=ft.ButtonStyle(bgcolor=ft.Colors.PRIMARY)),
         ]
 
     def _save(self, e):
@@ -72,13 +78,6 @@ class SettingsDialog(ft.AlertDialog):
             db.set_setting("default_model", self._model_dd.value)
         if self._theme_dd.value:
             db.set_setting("theme", self._theme_dd.value)
-            self.page.theme_mode = (
-                ft.ThemeMode.DARK if self._theme_dd.value == "dark" else ft.ThemeMode.LIGHT
-            )
-        self._close()
+        self._pg.pop_dialog()
         self.on_save_cb(self._model_dd.value, self._theme_dd.value)
-        self.page.update()
-
-    def _close(self):
-        self.open = False
-        self.page.update()
+        self._pg.update()
