@@ -1,0 +1,27 @@
+# Data (runtime-generated, never commit)
+data/*.db
+data/memory.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# Environment
+.env
+.env.*
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# OS
+Thumbs.db
+.DS_Store
