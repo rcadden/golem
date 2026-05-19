@@ -1,14 +1,73 @@
+import asyncio
 import json
+import os
+import subprocess
+import sys
 import httpx
 from typing import AsyncIterator
 
 BASE_URL = "http://localhost:11434"
 TIMEOUT = httpx.Timeout(connect=5.0, read=300.0, write=10.0, pool=5.0)
+_STARTUP_POLL_INTERVAL = 0.5  # seconds between readiness checks
+_STARTUP_TIMEOUT = 15         # seconds to wait for Ollama to become ready
 
 OLLAMA_OFFLINE_MSG = (
     "Ollama is not running. Start it with `ollama serve` "
     "or ensure the Ollama service is active."
 )
+
+_OLLAMA_SEARCH_PATHS = [
+    os.path.expandvars(r"%LOCALAPPDATA%\Programs\Ollama\ollama.exe"),
+    r"C:\Program Files\Ollama\ollama.exe",
+]
+
+
+def _find_ollama_exe() -> str | None:
+    """Return path to the Ollama executable, or None if not found."""
+    for path in _OLLAMA_SEARCH_PATHS:
+        if os.path.isfile(path):
+            return path
+    # Fall back to PATH lookup
+    import shutil
+    return shutil.which("ollama")
+
+
+async def ensure_ollama_running() -> bool:
+    """
+    Check if Ollama is reachable. If not, try to launch it.
+    Returns True if Ollama is (or becomes) ready, False if it couldn't be started.
+    """
+    if await _is_ready():
+        return True
+
+    exe = _find_ollama_exe()
+    if not exe:
+        return False
+
+    # Launch Ollama silently — it will start the server and system tray
+    kwargs = {}
+    if sys.platform == "win32":
+        kwargs["creationflags"] = subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS
+    subprocess.Popen([exe], **kwargs)
+
+    # Poll until ready or timeout
+    elapsed = 0.0
+    while elapsed < _STARTUP_TIMEOUT:
+        await asyncio.sleep(_STARTUP_POLL_INTERVAL)
+        elapsed += _STARTUP_POLL_INTERVAL
+        if await _is_ready():
+            return True
+
+    return False
+
+
+async def _is_ready() -> bool:
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(2.0)) as client:
+            resp = await client.get(f"{BASE_URL}/api/tags")
+            return resp.status_code == 200
+    except Exception:
+        return False
 
 
 async def list_models() -> list[str]:

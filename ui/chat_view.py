@@ -1,4 +1,4 @@
-import asyncio
+import webbrowser
 import flet as ft
 from ui.components import message_bubble
 import db
@@ -16,8 +16,6 @@ class ChatView(ft.Column):
         self.current_model = model
         self.streaming = False
         self._stream_cancel = False
-        self._active_bubble: ft.Container | None = None
-        self._active_content: str = ""
 
         self._messages_col = ft.Column(
             controls=[],
@@ -94,7 +92,7 @@ class ChatView(ft.Column):
                 extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
                 code_theme="atom-one-dark",
                 code_style=ft.TextStyle(font_family="Cascadia Code, Consolas, monospace"),
-                on_tap_link=lambda e: ft.launch_url(e.data),
+                on_tap_link=lambda e: webbrowser.open(e.data),
             )
 
         is_user = role == "user"
@@ -131,12 +129,12 @@ class ChatView(ft.Column):
         return inner
 
     def _copy_text(self, text: str):
-        self.page.set_clipboard(text)
+        self.page.clipboard = text
 
     def _copy_from_control(self, control):
-        text = control.value if hasattr(control, "value") else control.data
+        text = control.value if hasattr(control, "value") else getattr(control, "data", None)
         if text:
-            self.page.set_clipboard(text)
+            self.page.clipboard = text
 
     async def _on_submit(self, e=None):
         text = self._input.value.strip()
@@ -166,7 +164,7 @@ class ChatView(ft.Column):
         self._stream_cancel = False
         self._send_btn.visible = False
         self._stop_btn.visible = True
-        await self.page.update_async()
+        self.page.update()
 
         # Build payload from history
         rows = db.get_messages(self.conv_id)
@@ -191,18 +189,17 @@ class ChatView(ft.Column):
                 if chars_since_update >= UPDATE_INTERVAL_CHARS:
                     assistant_inner.value = buffer
                     chars_since_update = 0
-                    await self.page.update_async()
+                    self.page.update()
 
         except oc.OllamaOfflineError as ex:
             buffer = f"**Error:** {ex}"
         except Exception as ex:
             buffer += f"\n\n**Error:** {ex}"
         finally:
-            # Flush final content
             assistant_inner.value = buffer
             db.add_message(self.conv_id, "assistant", buffer)
             self.streaming = False
             self._stream_cancel = False
             self._send_btn.visible = True
             self._stop_btn.visible = False
-            await self.page.update_async()
+            self.page.update()

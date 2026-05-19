@@ -1,3 +1,4 @@
+import webbrowser
 import flet as ft
 
 
@@ -19,7 +20,7 @@ def message_bubble(role: str, content: str, on_copy=None) -> ft.Container:
             extension_set=ft.MarkdownExtensionSet.GITHUB_WEB,
             code_theme="atom-one-dark",
             code_style=ft.TextStyle(font_family="Cascadia Code, Consolas, monospace"),
-            on_tap_link=lambda e: ft.launch_url(e.data),
+            on_tap_link=lambda e: webbrowser.open(e.data),
         )
 
     copy_btn = ft.IconButton(

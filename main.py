@@ -1,10 +1,11 @@
 import flet as ft
-import asyncio
 import db
 import ollama_client as oc
 from ui.sidebar import Sidebar
 from ui.chat_view import ChatView
 from ui.settings import SettingsDialog
+
+_CENTER = ft.alignment.Alignment(0, 0)
 
 VERSION = "0.1.0"
 
@@ -27,7 +28,27 @@ async def main(page: ft.Page):
 
     # ── State ─────────────────────────────────────────────────────────────────
     db.init_db()
-    models = await oc.list_models()
+
+    # Show startup status while we check / launch Ollama
+    status_text = ft.Text("Starting Ollama...", size=14, color=ft.Colors.with_opacity(0.5, ft.Colors.WHITE))
+    status_spinner = ft.ProgressRing(width=16, height=16, stroke_width=2)
+    startup_overlay = ft.Container(
+        content=ft.Row(
+            [status_spinner, status_text],
+            alignment=ft.MainAxisAlignment.CENTER,
+            vertical_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=10,
+        ),
+        alignment=_CENTER,
+        expand=True,
+    )
+    page.add(startup_overlay)
+    page.update()
+
+    ollama_ready = await oc.ensure_ollama_running()
+    models = await oc.list_models() if ollama_ready else []
+
+    page.controls.clear()
     default_model = db.get_setting("default_model", models[0] if models else "")
     if not default_model and models:
         default_model = models[0]
@@ -44,9 +65,10 @@ async def main(page: ft.Page):
                 content=ft.Column(
                     controls=[
                         ft.Icon(ft.Icons.WARNING_AMBER_ROUNDED, size=48, color=ft.Colors.ORANGE_400),
-                        ft.Text("Ollama is not running", size=20, weight=ft.FontWeight.BOLD),
+                        ft.Text("Couldn't start Ollama", size=20, weight=ft.FontWeight.BOLD),
                         ft.Text(
-                            "Start it with `ollama serve` or ensure the Ollama service is active.",
+                            "Golem tried to launch Ollama automatically but couldn't reach it.\n"
+                            "Run `ollama serve` in a terminal, then restart Golem.",
                             size=14,
                             color=ft.Colors.with_opacity(0.6, ft.Colors.WHITE),
                             text_align=ft.TextAlign.CENTER,
@@ -56,7 +78,7 @@ async def main(page: ft.Page):
                     alignment=ft.MainAxisAlignment.CENTER,
                     spacing=12,
                 ),
-                alignment=ft.alignment.center,
+                alignment=_CENTER,
                 expand=True,
             )
         return ft.Container(
@@ -73,7 +95,7 @@ async def main(page: ft.Page):
                 alignment=ft.MainAxisAlignment.CENTER,
                 spacing=8,
             ),
-            alignment=ft.alignment.center,
+            alignment=_CENTER,
             expand=True,
         )
 
@@ -98,18 +120,16 @@ async def main(page: ft.Page):
         return model_picker.value or default_model or ""
 
     def on_model_change(e):
-        if current_conv_id[0] is not None:
-            # Update the model on the current conversation's chat view
-            if isinstance(chat_container.content, ChatView):
-                chat_container.content.current_model = model_picker.value
+        if isinstance(chat_container.content, ChatView):
+            chat_container.content.current_model = model_picker.value
 
     model_picker.on_change = on_model_change
 
     # ── Sidebar ───────────────────────────────────────────────────────────────
     sidebar = Sidebar(
         page=page,
-        on_select=lambda cid: asyncio.ensure_future(load_conversation(cid)),
-        on_new_chat=lambda: asyncio.ensure_future(new_chat()),
+        on_select=lambda cid: page.run_task(load_conversation, cid),
+        on_new_chat=lambda: page.run_task(new_chat),
         on_settings=lambda: open_settings(),
     )
     sidebar.refresh()
@@ -174,9 +194,9 @@ async def main(page: ft.Page):
         sidebar.refresh(conv_id)
         view = ChatView(page, conv_id, get_current_model())
         chat_container.content = view
-        await page.update_async()
+        page.update()
         view._input.focus()
-        await page.update_async()
+        page.update()
 
     async def load_conversation(conv_id: int):
         current_conv_id[0] = conv_id
@@ -189,7 +209,7 @@ async def main(page: ft.Page):
         view = ChatView(page, conv_id, model)
         view.load_history()
         chat_container.content = view
-        await page.update_async()
+        page.update()
 
     def open_settings():
         dlg = SettingsDialog(
@@ -217,9 +237,8 @@ async def main(page: ft.Page):
     convs = db.list_conversations()
     if convs:
         await load_conversation(convs[0]["id"])
-    # else leave empty state
 
-    await page.update_async()
+    page.update()
 
 
 ft.app(target=main)
