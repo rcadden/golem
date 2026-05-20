@@ -1,7 +1,79 @@
 import { useState, useEffect, useRef } from 'react'
-import MessageBubble from './MessageBubble'
+import MessageBubble, { ToolCard } from './MessageBubble'
 
 const api = window.golem
+
+// Convert DB message rows to the shape Ollama's /api/chat expects: role/content
+// plus tool_calls on assistant turns and tool_call_id on tool turns.
+function serializeForOllama(msgs) {
+  return msgs.map(m => {
+    const base = { role: m.role, content: m.content || '' }
+    if (m.tool_calls) {
+      try { base.tool_calls = JSON.parse(m.tool_calls) } catch {}
+    }
+    if (m.tool_call_id) base.tool_call_id = m.tool_call_id
+    return base
+  })
+}
+
+// Group persisted messages: combine assistant-with-tool_calls and subsequent
+// role='tool' result messages into a single render-time sequence so each tool
+// invocation shows as a self-contained card with args + result.
+function groupMessages(msgs) {
+  const items = []
+  for (let i = 0; i < msgs.length; i++) {
+    const m = msgs[i]
+    if (m.role === 'tool') {
+      let result
+      try { result = JSON.parse(m.content) } catch { result = m.content }
+      items.push({
+        kind: 'tool',
+        key: `t${m.id}`,
+        name: 'tool',
+        args: null,
+        result,
+        isError: !!(result && typeof result === 'object' && result.error),
+      })
+      continue
+    }
+    if (m.role === 'assistant' && m.tool_calls) {
+      let calls = []
+      try { calls = JSON.parse(m.tool_calls) || [] } catch {}
+      // Pair upcoming role='tool' messages with their call ids
+      const resultsById = {}
+      let j = i + 1
+      while (j < msgs.length && msgs[j].role === 'tool') {
+        let payload
+        try { payload = JSON.parse(msgs[j].content) } catch { payload = msgs[j].content }
+        resultsById[msgs[j].tool_call_id] = payload
+        j++
+      }
+      if (m.content) {
+        items.push({ kind: 'msg', key: `m${m.id}`, message: m })
+      }
+      for (const call of calls) {
+        const cid = call.id || `${m.id}-${call.function?.name}`
+        let args = call.function?.arguments
+        if (typeof args === 'string') {
+          try { args = JSON.parse(args) } catch {}
+        }
+        const result = resultsById[call.id]
+        items.push({
+          kind: 'tool',
+          key: `${m.id}-${cid}`,
+          name: call.function?.name,
+          args,
+          result,
+          isError: !!(result && typeof result === 'object' && result.error),
+        })
+      }
+      i = j - 1
+      continue
+    }
+    items.push({ kind: 'msg', key: `m${m.id}`, message: m })
+  }
+  return items
+}
 
 const SUGGESTIONS = [
   { icon: 'terminal',      label: 'Debug my code',     prompt: 'Help me debug an issue with my code.' },
@@ -10,17 +82,34 @@ const SUGGESTIONS = [
   { icon: 'code_blocks',   label: 'Review my code',    prompt: 'Review my code for improvements.' },
 ]
 
-export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvUpdate }) {
+export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvUpdate, pendingInput, onConsumePendingInput }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
-  const [streamingContent, setStreamingContent] = useState('')
+  // liveSegments: in-flight stream segments while a request is running.
+  // Each segment is either { type: 'text', content } or
+  // { type: 'tool', id, name, args, result?, isError?, isRunning }.
+  const [liveSegments, setLiveSegments] = useState([])
   const [selectedModel, setSelectedModel] = useState('')
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  // toolCap: true | false | null (unknown / not yet probed)
+  const [toolCap, setToolCap] = useState(null)
+  const [streamStats, setStreamStats] = useState(null)   // { promptTokens, completionTokens, durationMs, ttftMs } — set on streamEnd
+  const [elapsed, setElapsed] = useState(0)              // seconds since stream started, for live timer
   const [error, setError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState([])
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
+  const elapsedIntervalRef = useRef(null)
+
+  useEffect(() => {
+    if (!selectedModel) { setToolCap(null); return }
+    let cancelled = false
+    api.ollama.getToolCapability(selectedModel).then(cap => {
+      if (!cancelled) setToolCap(cap)
+    })
+    return () => { cancelled = true }
+  }, [selectedModel])
 
   useEffect(() => {
     async function load() {
@@ -39,45 +128,91 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   }, [conv?.id])
 
   useEffect(() => {
-    let accumulated = ''
-
     api.ollama.onChunk(chunk => {
-      accumulated += chunk
-      setStreamingContent(accumulated)
+      setLiveSegments(prev => {
+        const next = [...prev]
+        const last = next[next.length - 1]
+        if (last && last.type === 'text') {
+          next[next.length - 1] = { ...last, content: last.content + chunk }
+        } else {
+          next.push({ type: 'text', content: chunk })
+        }
+        return next
+      })
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    })
+
+    api.ollama.onToolCallStart(({ id, name, args }) => {
+      setLiveSegments(prev => [...prev, { type: 'tool', id, name, args, isRunning: true }])
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    })
+
+    api.ollama.onToolCallResult(({ id, result, isError }) => {
+      setLiveSegments(prev => prev.map(s =>
+        s.type === 'tool' && s.id === id
+          ? { ...s, result, isError, isRunning: false }
+          : s
+      ))
+    })
+
+    api.ollama.onStreamStats(data => {
+      setStreamStats(data)
     })
 
     api.ollama.onStreamEnd(async err => {
       setStreaming(false)
       if (err) {
         setError(`Stream error: ${err}`)
-        setStreamingContent('')
+        setLiveSegments([])
         return
       }
-      if (accumulated && conv) {
-        await api.db.addMessage(conv.id, 'assistant', accumulated)
+      // Main process persisted everything during the loop — reload from DB.
+      if (conv) {
         const msgs = await api.db.getMessages(conv.id)
-        if (msgs.length === 2 && conv.title === 'New Chat') {
-          const userMsg = msgs[0]?.content || ''
-          const title = userMsg.slice(0, 50) + (userMsg.length > 50 ? '…' : '')
+        const userCount = msgs.filter(m => m.role === 'user').length
+        if (userCount === 1 && conv.title === 'New Chat') {
+          const firstUser = msgs.find(m => m.role === 'user')
+          const title = (firstUser?.content || '').slice(0, 50) + ((firstUser?.content || '').length > 50 ? '…' : '')
           await api.db.renameConversation(conv.id, title)
           await onConvUpdate()
         }
         setMessages(msgs)
       }
-      accumulated = ''
-      setStreamingContent('')
+      setLiveSegments([])
     })
 
     return () => {
       api.ollama.offChunk()
       api.ollama.offStreamEnd()
+      api.ollama.offToolCallStart()
+      api.ollama.offToolCallResult()
+      api.ollama.offStreamStats()
     }
   }, [conv?.id])
 
   useEffect(() => {
+    if (streaming) {
+      setElapsed(0)
+      setStreamStats(null)
+      elapsedIntervalRef.current = setInterval(() => {
+        setElapsed(s => s + 1)
+      }, 1000)
+    } else {
+      clearInterval(elapsedIntervalRef.current)
+    }
+    return () => clearInterval(elapsedIntervalRef.current)
+  }, [streaming])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'instant' })
   }, [messages])
+
+  useEffect(() => {
+    if (pendingInput) {
+      setInput(pendingInput)
+      onConsumePendingInput()
+    }
+  }, [pendingInput])
 
   async function send(text) {
     const baseContent = (text || input).trim()
@@ -101,13 +236,14 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     setMessages(allMsgs)
 
     setStreaming(true)
-    setStreamingContent('')
+    setLiveSegments([])
 
     const payload = {
       model: selectedModel,
-      messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
-      sigilId: conv.sigil_id || null,
-      projectId: conv.project_id || null,
+      messages: serializeForOllama(allMsgs),
+      sigilId: conv.sigil_id ?? null,
+      skillId: conv.skill_id ?? null,
+      projectId: conv.project_id ?? null,
       conversationId: conv.id,
     }
     await api.ollama.startStream(payload)
@@ -115,19 +251,25 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
 
   async function handleRetry() {
     if (streaming || !conv || !selectedModel) return
-    const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant')
-    if (!lastAssistant) return
-    await api.db.deleteMessage(lastAssistant.id)
+    // Drop everything after the last user message — that's the assistant's
+    // most recent turn (which may include tool calls and tool results).
+    const lastUserIdx = [...messages].map(m => m.role).lastIndexOf('user')
+    if (lastUserIdx === -1) return
+    const toDelete = messages.slice(lastUserIdx + 1)
+    for (const m of toDelete) {
+      await api.db.deleteMessage(m.id)
+    }
     const remaining = await api.db.getMessages(conv.id)
     setMessages(remaining)
     setError('')
     setStreaming(true)
-    setStreamingContent('')
+    setLiveSegments([])
     const payload = {
       model: selectedModel,
-      messages: remaining.map(m => ({ role: m.role, content: m.content })),
-      sigilId: conv.sigil_id || null,
-      projectId: conv.project_id || null,
+      messages: serializeForOllama(remaining),
+      sigilId: conv.sigil_id ?? null,
+      skillId: conv.skill_id ?? null,
+      projectId: conv.project_id ?? null,
       conversationId: conv.id,
     }
     await api.ollama.startStream(payload)
@@ -159,10 +301,14 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     }
   }
 
-  // Determine last assistant message id for retry button
+  // Determine last assistant message id for retry button. Only consider assistant
+  // messages with actual textual content — intermediate tool-call-only turns shouldn't
+  // surface a Regenerate button.
   const lastAssistantId = !streaming
-    ? [...messages].reverse().find(m => m.role === 'assistant')?.id ?? null
+    ? [...messages].reverse().find(m => m.role === 'assistant' && m.content)?.id ?? null
     : null
+
+  const renderItems = groupMessages(messages)
 
   // ── Empty state ──────────────────────────────────────────────────────────────
   if (!conv) {
@@ -227,19 +373,45 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-6 py-8" style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(var(--accent-rgb),0.05) 0%, transparent 60%)' }}>
         <div className="max-w-[860px] mx-auto">
-          {messages.map(msg => (
-            <MessageBubble
-              key={msg.id}
-              role={msg.role}
-              content={msg.content}
-              onRetry={msg.id === lastAssistantId ? handleRetry : null}
-            />
+          {renderItems.map(item => (
+            item.kind === 'tool' ? (
+              <ToolCard
+                key={item.key}
+                name={item.name}
+                args={item.args}
+                result={item.result}
+                isError={item.isError}
+              />
+            ) : (
+              <MessageBubble
+                key={item.key}
+                role={item.message.role}
+                content={item.message.content}
+                onRetry={item.message.id === lastAssistantId ? handleRetry : null}
+              />
+            )
           ))}
-          {streaming && !streamingContent && (
+          {liveSegments.map((s, i) => (
+            s.type === 'text' ? (
+              <MessageBubble
+                key={`live-${i}`}
+                role="assistant"
+                content={s.content}
+                isStreaming={streaming && i === liveSegments.length - 1}
+              />
+            ) : (
+              <ToolCard
+                key={`live-${i}-${s.id}`}
+                name={s.name}
+                args={s.args}
+                result={s.result}
+                isError={s.isError}
+                isRunning={s.isRunning}
+              />
+            )
+          ))}
+          {streaming && liveSegments.length === 0 && (
             <MessageBubble role="assistant" isThinking />
-          )}
-          {streaming && streamingContent && (
-            <MessageBubble role="assistant" content={streamingContent} isStreaming />
           )}
           {error && (
             <div className="text-error text-body-md text-center py-2">{error}</div>
@@ -251,6 +423,17 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       {/* Input area */}
       <div className="shrink-0 px-6 pb-6" style={{ background: 'linear-gradient(to top, #0f0f16 80%, transparent)' }}>
         <div className="max-w-[860px] mx-auto">
+          {/* Stream stats / live timer */}
+          {(streaming || streamStats) && (
+            <div className="flex items-center justify-end mb-1 h-5">
+              <span className="text-[11px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                {streamStats
+                  ? `${Math.round(streamStats.durationMs / 1000)}s · ${streamStats.completionTokens.toLocaleString()} tokens`
+                  : `${elapsed}s`
+                }
+              </span>
+            </div>
+          )}
           {/* Attached file pills */}
           {attachedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
@@ -309,8 +492,36 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                 </button>
               </div>
 
-              {/* Right: model picker + send/stop */}
+              {/* Right: tools badge + model picker + send/stop */}
               <div className="flex items-center gap-2">
+                {/* Tools-enabled badge */}
+                {toolCap === true && (
+                  <span
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
+                    style={{
+                      background: 'rgba(80,200,120,0.12)',
+                      border: '1px solid rgba(80,200,120,0.3)',
+                      color: 'rgb(140,220,160)',
+                    }}
+                    title={conv?.project_id ? 'Files, git, and time tools active for this project' : 'Tool calling active — time tools available'}
+                  >
+                    <span className="material-symbols-outlined text-[10px]">build</span>
+                    {conv?.project_id ? 'Files · Git' : 'Tools'}
+                  </span>
+                )}
+                {toolCap === false && (
+                  <span
+                    className="px-2 py-0.5 rounded-full text-[10px] font-medium"
+                    style={{
+                      background: 'rgba(255,255,255,0.04)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      color: 'rgba(196,192,216,0.5)',
+                    }}
+                    title="This model doesn't support tool calling — it can only respond with text"
+                  >
+                    No tools
+                  </span>
+                )}
                 {/* Model picker */}
                 <div className="relative">
                   <button
