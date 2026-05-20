@@ -89,6 +89,16 @@ ipcMain.handle('db:removeProjectFile',        (_, id)                    => db.r
 ipcMain.handle('memory:load',     ()                   => db.loadMemory())
 ipcMain.handle('memory:save',     (_, content)         => db.saveMemory(content))
 
+ipcMain.handle('dialog:saveFile', async (_, { defaultName, content }) => {
+  const result = await dialog.showSaveDialog(mainWindow, {
+    defaultPath: defaultName,
+    filters: [{ name: 'Markdown', extensions: ['md'] }],
+  })
+  if (result.canceled || !result.filePath) return false
+  fs.writeFileSync(result.filePath, content, 'utf8')
+  return true
+})
+
 ipcMain.handle('dialog:openFile', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openFile'],

@@ -8,7 +8,7 @@ export default function Sidebar({
   conversations, activeConvId, activeView,
   projects, sigils,
   onNewChat, onNewChatWithSigil, onNewChatInProject,
-  onSelectConv, onDeleteConv, onRenameConv, onPinConv, onUnpinConv,
+  onSelectConv, onDeleteConv, onRenameConv, onPinConv, onUnpinConv, onExportConv,
   onSetView,
   onSigilsChange, onProjectsChange,
 }) {
@@ -21,8 +21,10 @@ export default function Sidebar({
   const [renameProjectValue, setRenameProjectValue] = useState('')
   const [expandedProjects, setExpandedProjects] = useState(new Set())
   const [sigilModal, setSigilModal] = useState(null)
+  const [search, setSearch] = useState('')
   const renameRef = useRef(null)
   const renameProjectRef = useRef(null)
+  const searchRef = useRef(null)
 
   // ── Conversation menu ─────────────────────────────────────────────────────────
 
@@ -244,8 +246,64 @@ export default function Sidebar({
           {navItem('Models', 'deployed_code', 'models')}
         </div>
 
+        {/* Search */}
+        <div className="px-3 pb-2 no-drag">
+          <div className="relative">
+            <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px]"
+              style={{ color: 'rgba(196,192,216,0.35)' }}>search</span>
+            <input
+              ref={searchRef}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search conversations…"
+              className="w-full rounded-lg pl-8 pr-8 py-1.5 text-[13px] text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
+              onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.4)'}
+              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-2 top-1/2 -translate-y-1/2"
+                style={{ color: 'rgba(196,192,216,0.4)' }}
+              >
+                <span className="material-symbols-outlined text-[14px]">close</span>
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Scrollable list */}
-        <div className="flex-1 overflow-y-auto px-3 mt-2 no-drag flex flex-col gap-3 pb-2">
+        <div className="flex-1 overflow-y-auto px-3 no-drag flex flex-col gap-3 pb-2">
+
+          {/* Search results */}
+          {search.trim() && (() => {
+            const q = search.toLowerCase()
+            const allConvs = [
+              ...conversations,
+              ...projects.flatMap(p => p.conversations || [])
+            ]
+            const results = allConvs.filter(c => c.title.toLowerCase().includes(q))
+            return (
+              <div>
+                <div className="px-2 mb-1.5">
+                  <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">
+                    {results.length} result{results.length !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                {results.length === 0 ? (
+                  <div className="px-2 py-3 text-[13px] text-on-surface-variant/40 text-center">No matches</div>
+                ) : (
+                  <div className="flex flex-col gap-px">
+                    {results.map(conv => <ConvRow key={conv.id} conv={conv} />)}
+                  </div>
+                )}
+              </div>
+            )
+          })()}
+
+          {/* Normal sections — hidden during search */}
+          {!search.trim() && (<>
 
           {/* Projects */}
           <div>
@@ -445,6 +503,8 @@ export default function Sidebar({
               {recent.map(conv => <ConvRow key={conv.id} conv={conv} />)}
             </div>
           </div>
+
+          </>)}
         </div>
 
         {/* Bottom nav */}
@@ -470,6 +530,11 @@ export default function Sidebar({
                     onClick={() => { startRename(conv) }}>
                     <span className="material-symbols-outlined text-[16px] text-on-surface-variant">edit</span>
                     Rename
+                  </button>
+                  <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+                    onClick={() => { onExportConv(convMenu.convId); setConvMenu(null) }}>
+                    <span className="material-symbols-outlined text-[16px] text-on-surface-variant">download</span>
+                    Export as Markdown
                   </button>
                   {conv?.pinned ? (
                     <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"

@@ -35,7 +35,8 @@ contextBridge.exposeInMainWorld('golem', {
     save: (content) => ipcRenderer.invoke('memory:save', content),
   },
   dialog: {
-    openFile: () => ipcRenderer.invoke('dialog:openFile'),
+    openFile:  ()     => ipcRenderer.invoke('dialog:openFile'),
+    saveFile:  (opts) => ipcRenderer.invoke('dialog:saveFile', opts),
   },
   application: {
     getLoginItemEnabled: ()       => ipcRenderer.invoke('app:getLoginItemEnabled'),

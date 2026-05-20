@@ -131,6 +131,32 @@ export default function App() {
     await Promise.all([refreshConversations(), refreshProjects()])
   }
 
+  async function handleExportConv(id) {
+    const conv = conversations.find(c => c.id === id)
+      ?? projects.flatMap(p => p.conversations || []).find(c => c.id === id)
+    if (!conv) return
+    const messages = await api.db.getMessages(id)
+    const date = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    const lines = [
+      `# ${conv.title}`,
+      ``,
+      `_Exported from Golem — ${date}_`,
+      ``,
+      `---`,
+      ``,
+    ]
+    for (const msg of messages) {
+      lines.push(msg.role === 'user' ? '**You**' : '**Golem**')
+      lines.push('')
+      lines.push(msg.content)
+      lines.push('')
+      lines.push('---')
+      lines.push('')
+    }
+    const slug = conv.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    await api.dialog.saveFile({ defaultName: `${slug}.md`, content: lines.join('\n') })
+  }
+
   // Find active conv from either regular convs or project convs
   const activeConv = conversations.find(c => c.id === activeConvId)
     ?? projects.flatMap(p => p.conversations || []).find(c => c.id === activeConvId)
@@ -159,6 +185,7 @@ export default function App() {
           onRenameConv={handleRenameConv}
           onPinConv={handlePinConv}
           onUnpinConv={handleUnpinConv}
+          onExportConv={handleExportConv}
           onSetView={setView}
           onSigilsChange={refreshSigils}
           onProjectsChange={refreshProjects}
