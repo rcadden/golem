@@ -1,5 +1,6 @@
 const fs = require('fs')
 const path = require('path')
+const { execFile } = require('child_process')
 
 // Tool registry — owns schemas and dispatch for all built-in (and later MCP) tools.
 //
@@ -21,6 +22,15 @@ function resolveSafe(projectDir, relPath) {
     throw new Error(`Path "${relPath}" is outside the project directory.`)
   }
   return resolved
+}
+
+function git(args, cwd) {
+  return new Promise((resolve, reject) => {
+    execFile('git', args, { cwd, encoding: 'utf8', maxBuffer: 10 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) reject(new Error((stderr || err.message).trim()))
+      else resolve(stdout)
+    })
+  })
 }
 
 const BUILTIN_TOOLS = {
@@ -199,6 +209,138 @@ const BUILTIN_TOOLS = {
       const fullPath = resolveSafe(ctx.projectDir, relPath)
       fs.mkdirSync(fullPath, { recursive: true })
       return { path: relPath, created: true }
+    },
+  },
+
+  git_status: {
+    schema: {
+      type: 'function',
+      function: {
+        name: 'git_status',
+        description: 'Show the current git working tree status, including which files are modified, staged, or untracked.',
+        parameters: { type: 'object', properties: {} },
+      },
+    },
+    execute: async (_, ctx) => {
+      if (!ctx.projectDir) throw new Error('No project directory configured.')
+      const output = await git(['status', '--short', '--branch'], ctx.projectDir)
+      return { output: output.trim() || '(nothing to report)' }
+    },
+  },
+
+  git_diff: {
+    schema: {
+      type: 'function',
+      function: {
+        name: 'git_diff',
+        description: 'Show changes in the working tree. Use staged: true to see what is already staged for commit.',
+        parameters: {
+          type: 'object',
+          properties: {
+            staged: {
+              type: 'boolean',
+              description: 'If true, shows staged (--cached) diff. If false (default), shows unstaged changes.',
+            },
+            path: {
+              type: 'string',
+              description: 'Limit the diff to a specific file (relative path). Optional.',
+            },
+          },
+        },
+      },
+    },
+    execute: async ({ staged = false, path: relPath } = {}, ctx) => {
+      if (!ctx.projectDir) throw new Error('No project directory configured.')
+      const args = ['diff']
+      if (staged) args.push('--cached')
+      if (relPath) args.push('--', relPath)
+      const output = await git(args, ctx.projectDir)
+      return { output: output.trim() || '(no changes)' }
+    },
+  },
+
+  git_add: {
+    schema: {
+      type: 'function',
+      function: {
+        name: 'git_add',
+        description: 'Stage files for the next commit. Pass ["."] to stage all changes in the project.',
+        parameters: {
+          type: 'object',
+          properties: {
+            paths: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of relative file paths to stage, or ["."] to stage everything.',
+            },
+          },
+          required: ['paths'],
+        },
+      },
+    },
+    execute: async ({ paths }, ctx) => {
+      if (!ctx.projectDir) throw new Error('No project directory configured.')
+      for (const p of paths) {
+        if (p !== '.') resolveSafe(ctx.projectDir, p)
+      }
+      await git(['add', ...paths], ctx.projectDir)
+      const status = await git(['status', '--short'], ctx.projectDir)
+      return { staged: paths, status: status.trim() }
+    },
+  },
+
+  git_commit: {
+    schema: {
+      type: 'function',
+      function: {
+        name: 'git_commit',
+        description: 'Create a git commit with the provided message. Stage files with git_add first.',
+        parameters: {
+          type: 'object',
+          properties: {
+            message: {
+              type: 'string',
+              description: 'The commit message. Use conventional commit format when appropriate (feat:, fix:, chore:, etc.).',
+            },
+          },
+          required: ['message'],
+        },
+      },
+    },
+    execute: async ({ message }, ctx) => {
+      if (!ctx.projectDir) throw new Error('No project directory configured.')
+      const output = await git(['commit', '-m', message], ctx.projectDir)
+      return { output: output.trim() }
+    },
+  },
+
+  git_push: {
+    schema: {
+      type: 'function',
+      function: {
+        name: 'git_push',
+        description: 'Push committed changes to the remote repository. Assumes git authentication (SSH key or credential manager) is already configured on the machine.',
+        parameters: {
+          type: 'object',
+          properties: {
+            remote: {
+              type: 'string',
+              description: 'Remote name. Defaults to "origin".',
+            },
+            branch: {
+              type: 'string',
+              description: 'Branch to push. Defaults to current branch.',
+            },
+          },
+        },
+      },
+    },
+    execute: async ({ remote = 'origin', branch } = {}, ctx) => {
+      if (!ctx.projectDir) throw new Error('No project directory configured.')
+      const args = ['push', remote]
+      if (branch) args.push(branch)
+      const output = await git(args, ctx.projectDir)
+      return { output: output.trim() || 'Push successful.' }
     },
   },
 }
