@@ -24,6 +24,7 @@ export default function Sidebar({
   const [renamingProjectId, setRenamingProjectId] = useState(null)
   const [renameProjectValue, setRenameProjectValue] = useState('')
   const [expandedProjects, setExpandedProjects] = useState(new Set())
+  const [expandedFileLists, setExpandedFileLists] = useState(new Set())
   const [sigilModal, setSigilModal] = useState(null)
   const [search, setSearch] = useState('')
   const renameRef = useRef(null)
@@ -466,21 +467,45 @@ export default function Sidebar({
                             </div>
                           </div>
 
-                          {/* Files */}
-                          {project.files?.map(file => (
-                            <div key={file.id} className="relative group/file flex items-center gap-2 px-2 py-1.5 rounded-lg"
-                              style={{ color: 'rgba(196,192,216,0.5)' }}>
-                              <span className="material-symbols-outlined shrink-0" style={{ fontSize: '13px' }}>description</span>
-                              <span className="text-[12px] truncate flex-1">{file.name}</span>
-                              <button
-                                onClick={() => handleRemoveProjectFile(file.id)}
-                                className="opacity-0 group-hover/file:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/10 hover:text-red-400"
-                                title="Remove file"
-                              >
-                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>close</span>
-                              </button>
-                            </div>
-                          ))}
+                          {/* Files — collapsible, default collapsed for directory-backed projects */}
+                          {project.files?.length > 0 && (() => {
+                            const fileListVisible = !project.directory_path || expandedFileLists.has(project.id)
+                            return (
+                              <>
+                                <button
+                                  onClick={() => setExpandedFileLists(prev => {
+                                    const next = new Set(prev)
+                                    if (next.has(project.id)) next.delete(project.id)
+                                    else next.add(project.id)
+                                    return next
+                                  })}
+                                  className="flex items-center gap-1.5 px-2 py-1 w-full text-left rounded-lg transition-colors hover:bg-white/5"
+                                  style={{ color: 'rgba(196,192,216,0.4)' }}
+                                >
+                                  <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>description</span>
+                                  <span className="text-[11px] flex-1">Files ({project.files.length})</span>
+                                  <span
+                                    className="material-symbols-outlined transition-transform"
+                                    style={{ fontSize: '13px', transform: fileListVisible ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                                  >expand_more</span>
+                                </button>
+                                {fileListVisible && project.files.map(file => (
+                                  <div key={file.id} className="relative group/file flex items-center gap-2 px-2 py-1.5 rounded-lg"
+                                    style={{ color: 'rgba(196,192,216,0.5)' }}>
+                                    <span className="material-symbols-outlined shrink-0" style={{ fontSize: '13px' }}>description</span>
+                                    <span className="text-[12px] truncate flex-1">{file.name}</span>
+                                    <button
+                                      onClick={() => handleRemoveProjectFile(file.id)}
+                                      className="opacity-0 group-hover/file:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/10 hover:text-red-400"
+                                      title="Remove file"
+                                    >
+                                      <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>close</span>
+                                    </button>
+                                  </div>
+                                ))}
+                              </>
+                            )
+                          })()}
 
                           {/* Add file button */}
                           <button
