@@ -244,7 +244,6 @@ export default function Sidebar({
         <div className="px-3 pb-2 flex flex-col gap-0.5 no-drag">
           {navItem('Chat', 'chat', 'chat')}
           {navItem('Models', 'deployed_code', 'models')}
-          {navItem('Stats', 'bar_chart', 'stats')}
         </div>
 
         {/* Search */}
@@ -510,6 +509,7 @@ export default function Sidebar({
 
         {/* Bottom nav */}
         <div className="px-3 pb-3 pt-2 no-drag flex flex-col gap-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          {navItem('Stats', 'bar_chart', 'stats')}
           {navItem('Settings', 'settings', 'settings')}
           {navItem('Help', 'help', 'help')}
         </div>
