@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react'
+import ColorPicker from './ColorPicker'
+import { applyAccentColor } from '../utils/accent'
 
 const api = window.golem
 
@@ -7,21 +9,24 @@ export default function SettingsView({ models }) {
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434')
   const [memory, setMemory] = useState('')
   const [launchAtStartup, setLaunchAtStartup] = useState(false)
+  const [accentColor, setAccentColor] = useState('#6366f1')
   const [saved, setSaved] = useState(false)
   const [testStatus, setTestStatus] = useState('')
 
   useEffect(() => {
     async function load() {
-      const [dm, url, mem, loginEnabled] = await Promise.all([
+      const [dm, url, mem, loginEnabled, accent] = await Promise.all([
         api.db.getSetting('default_model', models[0] || ''),
         api.db.getSetting('ollama_url', 'http://localhost:11434'),
         api.memory.load(),
         api.application.getLoginItemEnabled(),
+        api.db.getSetting('accent_color', '#6366f1'),
       ])
       setDefaultModel(dm)
       setOllamaUrl(url)
       setMemory(mem)
       setLaunchAtStartup(loginEnabled)
+      setAccentColor(accent)
     }
     load()
   }, [])
@@ -32,6 +37,7 @@ export default function SettingsView({ models }) {
       api.db.setSetting('ollama_url', ollamaUrl),
       api.memory.save(memory),
       api.application.setLoginItem(launchAtStartup),
+      api.db.setSetting('accent_color', accentColor),
     ])
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
@@ -120,7 +126,7 @@ export default function SettingsView({ models }) {
               <div
                 onClick={() => setLaunchAtStartup(v => !v)}
                 className="relative shrink-0 w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer"
-                style={{ background: launchAtStartup ? '#6366f1' : 'rgba(255,255,255,0.12)' }}
+                style={{ background: launchAtStartup ? 'var(--accent)' : 'rgba(255,255,255,0.12)' }}
               >
                 <div
                   className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
@@ -151,6 +157,21 @@ export default function SettingsView({ models }) {
           </div>
         </section>
 
+        {/* Appearance */}
+        <section className={card}>
+          <div className={cardHeader}>
+            <span className="material-symbols-outlined text-primary text-[20px]">palette</span>
+            <h3 className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Appearance</h3>
+          </div>
+          <div className={cardBody}>
+            <label className="block text-label-md text-on-surface-variant mb-4">Accent color</label>
+            <ColorPicker
+              value={accentColor}
+              onChange={hex => { setAccentColor(hex); applyAccentColor(hex) }}
+            />
+          </div>
+        </section>
+
         {/* About */}
         <section className={card}>
           <div className="px-6 py-4 flex items-center justify-between">
@@ -160,7 +181,7 @@ export default function SettingsView({ models }) {
               </div>
               <div>
                 <div className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Golem</div>
-                <div className="text-body-md text-on-surface-variant text-sm">Version 0.2.0</div>
+                <div className="text-body-md text-on-surface-variant text-sm">Version 0.3.0</div>
               </div>
             </div>
           </div>

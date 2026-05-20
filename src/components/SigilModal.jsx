@@ -62,7 +62,7 @@ export default function SigilModal({ sigil = null, onSave, onClose }) {
                 background: '#1a1a26',
                 border: '1px solid rgba(255,255,255,0.08)',
               }}
-              onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.5)'}
+              onFocus={e => e.target.style.borderColor = 'rgba(var(--accent-rgb),0.5)'}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
               onKeyDown={e => { if (e.key === 'Enter') e.preventDefault() }}
             />
@@ -79,7 +79,7 @@ export default function SigilModal({ sigil = null, onSave, onClose }) {
                 background: '#1a1a26',
                 border: '1px solid rgba(255,255,255,0.08)',
               }}
-              onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.5)'}
+              onFocus={e => e.target.style.borderColor = 'rgba(var(--accent-rgb),0.5)'}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
             />
           </div>
@@ -95,7 +95,7 @@ export default function SigilModal({ sigil = null, onSave, onClose }) {
               onClick={handleSave}
               disabled={!name.trim() || !content.trim()}
               className="px-5 py-2 rounded-xl text-[13px] font-medium text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
-              style={{ background: 'linear-gradient(135deg, #6366f1 0%, #818cf8 100%)' }}
+              style={{ background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-mid) 100%)' }}
             >
               {sigil ? 'Save changes' : 'Create Sigil'}
             </button>

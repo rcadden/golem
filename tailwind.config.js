@@ -15,7 +15,7 @@ export default {
         'on-background':          '#e4e1ed',
         'on-surface':             '#e4e1ed',
         'on-surface-variant':     '#c7c4d7',
-        primary:                  '#6366f1',
+        primary:                  'rgb(var(--accent-rgb) / <alpha-value>)',
         'primary-container':      '#8083ff',
         'on-primary':             '#ffffff',
         'on-primary-container':   '#0d0096',

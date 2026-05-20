@@ -29,7 +29,7 @@ function CodeBlock({ language, code }) {
       <button
         onClick={copy}
         className="absolute top-2 right-2 z-10 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium"
-        style={{ background: 'rgba(255,255,255,0.08)', color: copied ? '#a5b4fc' : 'rgba(196,192,216,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: 'rgba(255,255,255,0.08)', color: copied ? 'var(--accent-light)' : 'rgba(196,192,216,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
       >
         <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>{copied ? 'check' : 'content_copy'}</span>
         {copied ? 'Copied' : 'Copy'}
@@ -81,9 +81,9 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
         <div
           className="max-w-[72%] rounded-2xl rounded-br-sm px-4 py-3 text-[15px] leading-relaxed text-on-surface whitespace-pre-wrap"
           style={{
-            background: 'linear-gradient(135deg, rgba(99,102,241,0.28) 0%, rgba(99,102,241,0.18) 100%)',
-            border: '1px solid rgba(99,102,241,0.35)',
-            boxShadow: '0 2px 12px rgba(99,102,241,0.12)',
+            background: 'linear-gradient(135deg, rgba(var(--accent-rgb),0.28) 0%, rgba(var(--accent-rgb),0.18) 100%)',
+            border: '1px solid rgba(var(--accent-rgb),0.35)',
+            boxShadow: '0 2px 12px rgba(var(--accent-rgb),0.12)',
           }}
         >
           {content}
@@ -108,9 +108,9 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
             '--tw-prose-bullets':       '#464454',
             '--tw-prose-hr':            '#2a2a3a',
             '--tw-prose-quotes':        '#d4d0e8',
-            '--tw-prose-quote-borders': 'rgba(99,102,241,0.5)',
+            '--tw-prose-quote-borders': 'rgba(var(--accent-rgb),0.5)',
             '--tw-prose-captions':      '#8b88a0',
-            '--tw-prose-code':          '#c0c1ff',
+            '--tw-prose-code':          'var(--accent-light)',
             '--tw-prose-pre-code':      '#d4d0e8',
             '--tw-prose-pre-bg':        '#0d0d16',
             '--tw-prose-th-borders':    'rgba(255,255,255,0.1)',
@@ -130,7 +130,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
                 ) : (
                   <code
                     className="font-mono text-[13px] px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(99,102,241,0.15)', color: '#a5b4fc', border: '1px solid rgba(99,102,241,0.2)' }}
+                    style={{ background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.2)' }}
                     {...props}
                   >
                     {children}
@@ -140,7 +140,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
               a({ href, children }) {
                 return (
                   <a href={href} target="_blank" rel="noreferrer"
-                    className="text-[#818cf8] hover:text-[#a5b4fc] underline underline-offset-2 decoration-[rgba(99,102,241,0.4)] transition-colors">
+                    className="accent-link underline underline-offset-2 transition-colors">
                     {children}
                   </a>
                 )
@@ -155,7 +155,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
               th({ children }) {
                 return (
                   <th className="px-4 py-2 text-left font-medium text-[#c0c1ff] text-[13px]"
-                    style={{ borderBottom: '1px solid rgba(99,102,241,0.3)', background: 'rgba(99,102,241,0.08)' }}>
+                    style={{ borderBottom: '1px solid rgba(var(--accent-rgb),0.3)', background: 'rgba(var(--accent-rgb),0.08)' }}>
                     {children}
                   </th>
                 )
@@ -171,7 +171,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
               blockquote({ children }) {
                 return (
                   <blockquote className="pl-4 italic text-[#b8b4cc]"
-                    style={{ borderLeft: '3px solid rgba(99,102,241,0.5)' }}>
+                    style={{ borderLeft: '3px solid rgba(var(--accent-rgb),0.5)' }}>
                     {children}
                   </blockquote>
                 )
@@ -181,7 +181,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
             {content}
           </ReactMarkdown>
           {isStreaming && (
-            <span className="inline-block w-[3px] h-[1em] align-middle bg-[#6366f1] animate-pulse ml-0.5 rounded-sm" />
+            <span className="inline-block w-[3px] h-[1em] align-middle animate-pulse ml-0.5 rounded-sm" style={{ background: 'var(--accent)' }} />
           )}
         </div>
 
@@ -216,12 +216,12 @@ function Avatar() {
     <div
       className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center mt-0.5"
       style={{
-        background: 'linear-gradient(135deg, rgba(99,102,241,0.3), rgba(129,140,248,0.2))',
-        border: '1px solid rgba(99,102,241,0.3)',
-        boxShadow: '0 0 12px rgba(99,102,241,0.15)',
+        background: 'linear-gradient(135deg, rgba(var(--accent-rgb),0.3), rgba(var(--accent-rgb),0.15))',
+        border: '1px solid rgba(var(--accent-rgb),0.3)',
+        boxShadow: '0 0 12px rgba(var(--accent-rgb),0.15)',
       }}
     >
-      <span className="material-symbols-outlined text-[#818cf8]" style={{ fontSize: '14px' }}>smart_toy</span>
+      <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--accent-mid)' }}>smart_toy</span>
     </div>
   )
 }

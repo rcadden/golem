@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { applyAccentColor } from './utils/accent'
 import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
 import ModelsView from './components/ModelsView'
@@ -19,6 +20,8 @@ export default function App() {
 
   useEffect(() => {
     async function init() {
+      const accent = await api.db.getSetting('accent_color', '#6366f1')
+      applyAccentColor(accent)
       const ready = await api.ollama.ensureRunning()
       setOllamaReady(ready)
       if (ready) {

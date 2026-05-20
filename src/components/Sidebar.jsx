@@ -130,11 +130,11 @@ export default function Sidebar({
       <button
         onClick={() => onSetView(viewName)}
         className="flex items-center gap-2.5 px-2 py-2 rounded-lg w-full text-left transition-all duration-150 no-drag"
-        style={isActive ? { background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' } : { color: 'rgba(196,192,216,0.6)' }}
+        style={isActive ? { background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)' } : { color: 'rgba(196,192,216,0.6)' }}
         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' } }}
         onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.6)' } }}
       >
-        <span className="material-symbols-outlined text-[18px]" style={isActive ? { fontVariationSettings: "'FILL' 1", color: '#818cf8' } : {}}>{icon}</span>
+        <span className="material-symbols-outlined text-[18px]" style={isActive ? { fontVariationSettings: "'FILL' 1", color: 'var(--accent-mid)' } : {}}>{icon}</span>
         <span className="text-[13px] font-medium">{label}</span>
       </button>
     )
@@ -158,7 +158,7 @@ export default function Sidebar({
               if (e.key === 'Escape') setRenamingId(null)
             }}
             className="w-full rounded-lg px-3 py-2 text-[13px] text-on-surface focus:outline-none"
-            style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)' }}
+            style={{ background: 'rgba(var(--accent-rgb),0.15)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}
           />
         ) : (
           <>
@@ -167,26 +167,26 @@ export default function Sidebar({
               className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
               style={{
                 paddingRight: '2rem',
-                ...(isActive ? { background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' } : {}),
+                ...(isActive ? { background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)' } : {}),
               }}
               onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '' }}
             >
               <span
                 className="material-symbols-outlined shrink-0"
-                style={{ fontSize: '15px', color: isActive ? '#818cf8' : 'rgba(196,192,216,0.4)' }}
+                style={{ fontSize: '15px', color: isActive ? 'var(--accent-mid)' : 'rgba(196,192,216,0.4)' }}
               >
                 {conv.pinned ? 'keep' : 'chat_bubble'}
               </span>
               <span
                 className="text-[13px] truncate leading-tight flex-1"
-                style={{ color: isActive ? '#c7c4ff' : 'rgba(196,192,216,0.7)' }}
+                style={{ color: isActive ? 'var(--accent-light)' : 'rgba(196,192,216,0.7)' }}
               >
                 {conv.title}
               </span>
               {conv.sigil_name && (
                 <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full"
-                  style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+                  style={{ background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-mid)' }}>
                   {conv.sigil_name}
                 </span>
               )}
@@ -231,9 +231,9 @@ export default function Sidebar({
           <button
             onClick={onNewChat}
             className="no-drag w-full flex items-center justify-center gap-2 text-white py-2.5 px-4 rounded-xl text-[13px] font-medium transition-all duration-200 active:scale-[0.97]"
-            style={{ background: 'linear-gradient(135deg, #6366f1 0%, #818cf8 100%)', boxShadow: '0 0 0 0 rgba(99,102,241,0)' }}
-            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.35)'}
-            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 0 0 0 rgba(99,102,241,0)'}
+            style={{ background: 'linear-gradient(135deg, var(--accent) 0%, var(--accent-mid) 100%)', boxShadow: '0 0 0 0 rgba(var(--accent-rgb),0)' }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow = '0 4px 20px rgba(var(--accent-rgb),0.35)'}
+            onMouseLeave={e => e.currentTarget.style.boxShadow = '0 0 0 0 rgba(var(--accent-rgb),0)'}
           >
             <span className="material-symbols-outlined text-[17px]">add</span>
             New Chat
@@ -258,7 +258,7 @@ export default function Sidebar({
               placeholder="Search conversations…"
               className="w-full rounded-lg pl-8 pr-8 py-1.5 text-[13px] text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all"
               style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
-              onFocus={e => e.target.style.borderColor = 'rgba(99,102,241,0.4)'}
+              onFocus={e => e.target.style.borderColor = 'rgba(var(--accent-rgb),0.4)'}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
             />
             {search && (
@@ -345,7 +345,7 @@ export default function Sidebar({
                               if (e.key === 'Escape') setRenamingProjectId(null)
                             }}
                             className="w-full rounded-lg px-3 py-2 text-[13px] text-on-surface focus:outline-none"
-                            style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)' }}
+                            style={{ background: 'rgba(var(--accent-rgb),0.15)', border: '1px solid rgba(var(--accent-rgb),0.4)' }}
                           />
                         ) : (
                           <>
@@ -356,7 +356,7 @@ export default function Sidebar({
                               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
                               onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
                             >
-                              <span className="material-symbols-outlined text-[15px]" style={{ color: '#6366f1', fontVariationSettings: "'FILL' 1" }}>
+                              <span className="material-symbols-outlined text-[15px]" style={{ color: 'var(--accent)', fontVariationSettings: "'FILL' 1" }}>
                                 {isExpanded ? 'folder_open' : 'folder'}
                               </span>
                               <span className="text-[13px] font-medium truncate flex-1">{project.name}</span>
@@ -417,9 +417,9 @@ export default function Sidebar({
                           <button
                             onClick={() => onNewChatInProject(project.id)}
                             className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] transition-colors text-left"
-                            style={{ color: 'rgba(99,102,241,0.6)' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.color = '#818cf8' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(99,102,241,0.6)' }}
+                            style={{ color: 'rgba(var(--accent-rgb),0.6)' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.08)'; e.currentTarget.style.color = 'var(--accent-mid)' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(var(--accent-rgb),0.6)' }}
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>add</span>
                             New chat
@@ -464,7 +464,7 @@ export default function Sidebar({
                       onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
                       onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
                     >
-                      <span className="material-symbols-outlined shrink-0 text-[#6366f1]" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1" }}>auto_fix_high</span>
+                      <span className="material-symbols-outlined shrink-0" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1", color: 'var(--accent)' }}>auto_fix_high</span>
                       <span className="text-[13px] truncate">{sigil.name}</span>
                     </button>
                     <button

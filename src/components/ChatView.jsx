@@ -215,7 +215,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
           {conv.sigil_name && (
             <div
               className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium"
-              style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc' }}
+              style={{ background: 'rgba(var(--accent-rgb),0.12)', border: '1px solid rgba(var(--accent-rgb),0.25)', color: 'var(--accent-light)' }}
             >
               <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_fix_high</span>
               {conv.sigil_name}
@@ -225,7 +225,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-8" style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(99,102,241,0.05) 0%, transparent 60%)' }}>
+      <div className="flex-1 overflow-y-auto px-6 py-8" style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(var(--accent-rgb),0.05) 0%, transparent 60%)' }}>
         <div className="max-w-[860px] mx-auto">
           {messages.map(msg => (
             <MessageBubble
@@ -258,7 +258,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                 <div
                   key={i}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px]"
-                  style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc' }}
+                  style={{ background: 'rgba(var(--accent-rgb),0.12)', border: '1px solid rgba(var(--accent-rgb),0.25)', color: 'var(--accent-light)' }}
                 >
                   <span className="material-symbols-outlined text-[14px]">description</span>
                   <span className="max-w-[160px] truncate">{f.name}</span>
@@ -278,10 +278,10 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
             style={{
               background: '#1a1a26',
               border: '1px solid rgba(255,255,255,0.08)',
-              boxShadow: '0 0 0 0 rgba(99,102,241,0)',
+              boxShadow: '0 0 0 0 rgba(var(--accent-rgb),0)',
             }}
-            onFocusCapture={e => e.currentTarget.style.boxShadow = '0 0 0 2px rgba(99,102,241,0.35), 0 8px 32px rgba(99,102,241,0.08)'}
-            onBlurCapture={e => e.currentTarget.style.boxShadow = '0 0 0 0 rgba(99,102,241,0)'}
+            onFocusCapture={e => e.currentTarget.style.boxShadow = '0 0 0 2px rgba(var(--accent-rgb),0.35), 0 8px 32px rgba(var(--accent-rgb),0.08)'}
+            onBlurCapture={e => e.currentTarget.style.boxShadow = '0 0 0 0 rgba(var(--accent-rgb),0)'}
           >
             <textarea
               ref={textareaRef}

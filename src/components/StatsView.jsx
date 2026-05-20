@@ -55,8 +55,8 @@ function BarChart({ data, valueKey = 'messages', label = 'messages' }) {
               style={{
                 height: `${height}%`,
                 background: isToday
-                  ? 'linear-gradient(180deg, #818cf8 0%, #6366f1 100%)'
-                  : d[valueKey] > 0 ? 'rgba(99,102,241,0.45)' : 'rgba(255,255,255,0.04)',
+                  ? 'linear-gradient(180deg, var(--accent-mid) 0%, var(--accent) 100%)'
+                  : d[valueKey] > 0 ? 'rgba(var(--accent-rgb),0.45)' : 'rgba(255,255,255,0.04)',
                 minHeight: '3px',
               }}
             />
@@ -162,8 +162,8 @@ export default function StatsView() {
                     <button key={mode} onClick={() => setChartMode(mode)}
                       className="px-3 py-1.5 text-[12px] font-medium transition-colors"
                       style={{
-                        background: chartMode === mode ? 'rgba(99,102,241,0.2)' : 'transparent',
-                        color: chartMode === mode ? '#a5b4fc' : 'rgba(196,192,216,0.5)',
+                        background: chartMode === mode ? 'rgba(var(--accent-rgb),0.2)' : 'transparent',
+                        color: chartMode === mode ? 'var(--accent-light)' : 'rgba(196,192,216,0.5)',
                       }}>
                       {lbl}
                     </button>
@@ -195,7 +195,7 @@ export default function StatsView() {
                         <div className="h-1.5 rounded-full overflow-hidden"
                           style={{ background: 'rgba(255,255,255,0.06)' }}>
                           <div className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, background: 'linear-gradient(90deg, #6366f1, #818cf8)' }} />
+                            style={{ width: `${pct}%`, background: 'linear-gradient(90deg, var(--accent), var(--accent-mid))' }} />
                         </div>
                       </div>
                     )

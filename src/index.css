@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --accent: #6366f1;
+  --accent-rgb: 99, 102, 241;
+  --accent-mid: #818cf8;
+  --accent-light: #a5b4fc;
+}
+
 @layer base {
   * { box-sizing: border-box; }
 
@@ -41,6 +48,9 @@
   .no-drag { -webkit-app-region: no-drag; }
 
   .glow-input:focus-within {
-    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 0 2px rgba(var(--accent-rgb), 0.3);
   }
+
+  a.accent-link { color: var(--accent-mid); text-decoration-color: rgba(var(--accent-rgb), 0.4); }
+  a.accent-link:hover { color: var(--accent-light); }
 }
