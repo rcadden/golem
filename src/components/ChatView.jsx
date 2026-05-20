@@ -107,6 +107,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       model: selectedModel,
       messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
       sigilId: conv.sigil_id || null,
+      projectId: conv.project_id || null,
     }
     await api.ollama.startStream(payload)
   }
@@ -125,6 +126,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       model: selectedModel,
       messages: remaining.map(m => ({ role: m.role, content: m.content })),
       sigilId: conv.sigil_id || null,
+      projectId: conv.project_id || null,
     }
     await api.ollama.startStream(payload)
   }
@@ -205,16 +207,18 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   // ── Active chat ──────────────────────────────────────────────────────────────
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: '#0f0f16' }}>
-      {/* Sigil badge */}
-      {conv.sigil_name && (
-        <div className="flex items-center justify-center pt-3 pb-0">
-          <div
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium"
-            style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc' }}
-          >
-            <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_fix_high</span>
-            {conv.sigil_name}
-          </div>
+      {/* Context badges */}
+      {(conv.sigil_name || conv.project_id) && (
+        <div className="flex items-center justify-center gap-2 pt-3 pb-0">
+          {conv.sigil_name && (
+            <div
+              className="flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-medium"
+              style={{ background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', color: '#a5b4fc' }}
+            >
+              <span className="material-symbols-outlined text-[12px]" style={{ fontVariationSettings: "'FILL' 1" }}>auto_fix_high</span>
+              {conv.sigil_name}
+            </div>
+          )}
         </div>
       )}
 

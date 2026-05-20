@@ -22,11 +22,13 @@ _Make the core chat experience match Claude Desktop._
 ## Sprint 2 — Power Features
 _Features that pay off once the core is solid._
 
+- [x] **Projects** — conversation folders with injected file context; files listed inside the project in sidebar; all chats in a project share the file context automatically; raw injection (no RAG)
+- [ ] **Three-dots hover menu** — already implemented; hover `⋯` replaces double-click rename _(done as UX fix)_
 - [ ] **Message editing** — click a sent user message to edit it; clears subsequent messages and regenerates · RICE: 7·3·0.8·3 = 5.6
 - [ ] **Conversation search** — search bar in sidebar to filter conversations by title or content · RICE: 6·2·0.8·2 = 4.8
 - [ ] **Export conversation** — save active chat as Markdown file · RICE: 5·2·0.9·1 = 9
-- [ ] **Keyboard shortcuts** — Ctrl+N new chat, Escape cancel stream, ↑ to recall last input · RICE: 7·2·0.9·1 = 12.6
 - [ ] **Context window indicator** — subtle token usage bar near input; warns when approaching model limit · RICE: 5·2·0.7·2 = 3.5
+- [ ] **Keyboard shortcuts** — Ctrl+N new chat, Escape cancel stream · RICE: deprioritized per user preference
 
 ---
 

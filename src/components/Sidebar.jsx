@@ -2,37 +2,40 @@ import { useState, useRef } from 'react'
 import SigilModal from './SigilModal'
 
 const ICON_SRC = '/icon.png'
-
 const api = window.golem
 
 export default function Sidebar({
   conversations, activeConvId, activeView,
-  sigils,
-  onNewChat, onNewChatWithSigil,
+  projects, sigils,
+  onNewChat, onNewChatWithSigil, onNewChatInProject,
   onSelectConv, onDeleteConv, onRenameConv, onPinConv, onUnpinConv,
   onSetView,
-  onSigilsChange,
+  onSigilsChange, onProjectsChange,
 }) {
-  const [contextMenu, setContextMenu] = useState(null)   // { x, y, convId }
-  const [sigilMenu, setSigilMenu] = useState(null)       // { x, y, sigilId }
+  const [convMenu, setConvMenu] = useState(null)      // { x, y, convId }
+  const [sigilMenu, setSigilMenu] = useState(null)    // { x, y, sigilId }
+  const [projectMenu, setProjectMenu] = useState(null)// { x, y, projectId }
   const [renamingId, setRenamingId] = useState(null)
   const [renameValue, setRenameValue] = useState('')
-  const [sigilModal, setSigilModal] = useState(null)     // null | { sigil: null|object }
+  const [renamingProjectId, setRenamingProjectId] = useState(null)
+  const [renameProjectValue, setRenameProjectValue] = useState('')
+  const [expandedProjects, setExpandedProjects] = useState(new Set())
+  const [sigilModal, setSigilModal] = useState(null)
   const renameRef = useRef(null)
+  const renameProjectRef = useRef(null)
 
-  // ── Conversation rename ───────────────────────────────────────────────────────
+  // ── Conversation menu ─────────────────────────────────────────────────────────
 
-  function handleRightClick(e, convId) {
-    e.preventDefault()
-    setContextMenu({ x: e.clientX, y: e.clientY, convId })
+  function openConvMenu(e, convId) {
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    setConvMenu({ x: rect.left - 8, y: rect.bottom + 4, convId })
   }
-
-  function closeMenu() { setContextMenu(null) }
 
   function startRename(conv) {
     setRenamingId(conv.id)
     setRenameValue(conv.title)
-    closeMenu()
+    setConvMenu(null)
     setTimeout(() => renameRef.current?.select(), 50)
   }
 
@@ -41,12 +44,66 @@ export default function Sidebar({
     setRenamingId(null)
   }
 
-  // ── Sigil CRUD ────────────────────────────────────────────────────────────────
+  // ── Project actions ───────────────────────────────────────────────────────────
 
-  function handleSigilRightClick(e, sigilId) {
-    e.preventDefault()
-    setSigilMenu({ x: e.clientX, y: e.clientY, sigilId })
+  function toggleProject(id) {
+    setExpandedProjects(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
   }
+
+  function openProjectMenu(e, projectId) {
+    e.stopPropagation()
+    const rect = e.currentTarget.getBoundingClientRect()
+    setProjectMenu({ x: rect.left - 8, y: rect.bottom + 4, projectId })
+  }
+
+  function startRenameProject(project) {
+    setRenamingProjectId(project.id)
+    setRenameProjectValue(project.name)
+    setProjectMenu(null)
+    setTimeout(() => renameProjectRef.current?.select(), 50)
+  }
+
+  async function commitRenameProject(id) {
+    if (renameProjectValue.trim()) await api.db.renameProject(id, renameProjectValue.trim())
+    setRenamingProjectId(null)
+    await onProjectsChange()
+  }
+
+  async function handleAddFileToProject(projectId) {
+    setProjectMenu(null)
+    const file = await api.dialog.openFile()
+    if (!file || file.error) return
+    await api.db.addProjectFile(projectId, file.name, file.content)
+    await onProjectsChange()
+  }
+
+  async function handleRemoveProjectFile(fileId) {
+    await api.db.removeProjectFile(fileId)
+    await onProjectsChange()
+  }
+
+  async function handleDeleteProject(id) {
+    await api.db.deleteProject(id)
+    setProjectMenu(null)
+    setExpandedProjects(prev => { const next = new Set(prev); next.delete(id); return next })
+    await onProjectsChange()
+  }
+
+  async function handleCreateProject() {
+    const id = await api.db.createProject('New Project')
+    await onProjectsChange()
+    const project = { id, name: 'New Project' }
+    setExpandedProjects(prev => new Set([...prev, id]))
+    setRenamingProjectId(id)
+    setRenameProjectValue('New Project')
+    setTimeout(() => renameProjectRef.current?.select(), 80)
+  }
+
+  // ── Sigil actions ─────────────────────────────────────────────────────────────
 
   async function handleSigilSave(id, name, content) {
     if (id) {
@@ -71,17 +128,11 @@ export default function Sidebar({
       <button
         onClick={() => onSetView(viewName)}
         className="flex items-center gap-2.5 px-2 py-2 rounded-lg w-full text-left transition-all duration-150 no-drag"
-        style={isActive
-          ? { background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' }
-          : { color: 'rgba(196,192,216,0.6)' }
-        }
+        style={isActive ? { background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' } : { color: 'rgba(196,192,216,0.6)' }}
         onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' } }}
         onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.6)' } }}
       >
-        <span className="material-symbols-outlined text-[18px]"
-          style={isActive ? { fontVariationSettings: "'FILL' 1", color: '#818cf8' } : {}}>
-          {icon}
-        </span>
+        <span className="material-symbols-outlined text-[18px]" style={isActive ? { fontVariationSettings: "'FILL' 1", color: '#818cf8' } : {}}>{icon}</span>
         <span className="text-[13px] font-medium">{label}</span>
       </button>
     )
@@ -89,10 +140,11 @@ export default function Sidebar({
 
   // ── Conversation row ──────────────────────────────────────────────────────────
 
-  function ConvRow({ conv }) {
+  function ConvRow({ conv, projectId = null }) {
     const isActive = activeConvId === conv.id && activeView === 'chat'
+
     return (
-      <div className="relative group">
+      <div className="relative group/conv">
         {renamingId === conv.id ? (
           <input
             ref={renameRef}
@@ -107,36 +159,48 @@ export default function Sidebar({
             style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)' }}
           />
         ) : (
-          <button
-            onClick={() => { onSelectConv(conv.id); onSetView('chat') }}
-            onDoubleClick={() => startRename(conv)}
-            onContextMenu={e => handleRightClick(e, conv.id)}
-            className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
-            style={isActive ? { background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' } : {}}
-            onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
-            onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '' }}
-          >
-            <span
-              className="material-symbols-outlined shrink-0"
-              style={{ fontSize: '15px', color: isActive ? '#818cf8' : 'rgba(196,192,216,0.4)' }}
+          <>
+            <button
+              onClick={() => { onSelectConv(conv.id); onSetView('chat') }}
+              className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
+              style={{
+                paddingRight: '2rem',
+                ...(isActive ? { background: 'rgba(99,102,241,0.15)', color: '#a5b4fc' } : {}),
+              }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+              onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '' }}
             >
-              {conv.pinned ? 'keep' : 'chat_bubble'}
-            </span>
-            <span
-              className="text-[13px] truncate leading-tight flex-1"
-              style={{ color: isActive ? '#c7c4ff' : 'rgba(196,192,216,0.7)' }}
-            >
-              {conv.title}
-            </span>
-            {conv.sigil_name && (
               <span
-                className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full"
-                style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}
+                className="material-symbols-outlined shrink-0"
+                style={{ fontSize: '15px', color: isActive ? '#818cf8' : 'rgba(196,192,216,0.4)' }}
               >
-                {conv.sigil_name}
+                {conv.pinned ? 'keep' : 'chat_bubble'}
               </span>
-            )}
-          </button>
+              <span
+                className="text-[13px] truncate leading-tight flex-1"
+                style={{ color: isActive ? '#c7c4ff' : 'rgba(196,192,216,0.7)' }}
+              >
+                {conv.title}
+              </span>
+              {conv.sigil_name && (
+                <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full"
+                  style={{ background: 'rgba(99,102,241,0.15)', color: '#818cf8' }}>
+                  {conv.sigil_name}
+                </span>
+              )}
+            </button>
+
+            {/* Three-dots menu button */}
+            <button
+              onClick={e => openConvMenu(e, conv.id)}
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/conv:opacity-100 transition-opacity"
+              style={{ color: 'rgba(196,192,216,0.5)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
+            </button>
+          </>
         )}
       </div>
     )
@@ -183,6 +247,134 @@ export default function Sidebar({
         {/* Scrollable list */}
         <div className="flex-1 overflow-y-auto px-3 mt-2 no-drag flex flex-col gap-3 pb-2">
 
+          {/* Projects */}
+          <div>
+            <div className="px-2 mb-1.5 flex items-center justify-between">
+              <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Projects</span>
+              <button
+                onClick={handleCreateProject}
+                className="p-0.5 rounded hover:bg-white/5 text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
+                title="New Project"
+              >
+                <span className="material-symbols-outlined text-[14px]">add</span>
+              </button>
+            </div>
+
+            {projects.length === 0 ? (
+              <button
+                onClick={handleCreateProject}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-on-surface-variant/40 hover:text-on-surface-variant/70 hover:bg-white/5 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[14px]">create_new_folder</span>
+                Create your first project
+              </button>
+            ) : (
+              <div className="flex flex-col gap-px">
+                {projects.map(project => {
+                  const isExpanded = expandedProjects.has(project.id)
+                  return (
+                    <div key={project.id}>
+                      {/* Project header */}
+                      <div className="relative group/proj">
+                        {renamingProjectId === project.id ? (
+                          <input
+                            ref={renameProjectRef}
+                            value={renameProjectValue}
+                            onChange={e => setRenameProjectValue(e.target.value)}
+                            onBlur={() => commitRenameProject(project.id)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') commitRenameProject(project.id)
+                              if (e.key === 'Escape') setRenamingProjectId(null)
+                            }}
+                            className="w-full rounded-lg px-3 py-2 text-[13px] text-on-surface focus:outline-none"
+                            style={{ background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.4)' }}
+                          />
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => toggleProject(project.id)}
+                              className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-all"
+                              style={{ paddingRight: '2rem', color: 'rgba(196,192,216,0.7)' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
+                            >
+                              <span className="material-symbols-outlined text-[15px]" style={{ color: '#6366f1', fontVariationSettings: "'FILL' 1" }}>
+                                {isExpanded ? 'folder_open' : 'folder'}
+                              </span>
+                              <span className="text-[13px] font-medium truncate flex-1">{project.name}</span>
+                              <span className="material-symbols-outlined shrink-0 transition-transform" style={{ fontSize: '14px', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', color: 'rgba(196,192,216,0.3)' }}>
+                                expand_more
+                              </span>
+                            </button>
+                            <button
+                              onClick={e => openProjectMenu(e, project.id)}
+                              className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/proj:opacity-100 transition-opacity"
+                              style={{ color: 'rgba(196,192,216,0.5)' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+                            >
+                              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
+                            </button>
+                          </>
+                        )}
+                      </div>
+
+                      {/* Expanded project contents */}
+                      {isExpanded && (
+                        <div className="pl-4 mt-0.5 flex flex-col gap-px">
+                          {/* Files */}
+                          {project.files?.map(file => (
+                            <div key={file.id} className="relative group/file flex items-center gap-2 px-2 py-1.5 rounded-lg"
+                              style={{ color: 'rgba(196,192,216,0.5)' }}>
+                              <span className="material-symbols-outlined shrink-0" style={{ fontSize: '13px' }}>description</span>
+                              <span className="text-[12px] truncate flex-1">{file.name}</span>
+                              <button
+                                onClick={() => handleRemoveProjectFile(file.id)}
+                                className="opacity-0 group-hover/file:opacity-100 transition-opacity p-0.5 rounded hover:bg-red-500/10 hover:text-red-400"
+                                title="Remove file"
+                              >
+                                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>close</span>
+                              </button>
+                            </div>
+                          ))}
+
+                          {/* Add file button */}
+                          <button
+                            onClick={() => handleAddFileToProject(project.id)}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] transition-colors text-left"
+                            style={{ color: 'rgba(196,192,216,0.35)' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(196,192,216,0.6)' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.35)' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>attach_file</span>
+                            Add file
+                          </button>
+
+                          {/* Project conversations */}
+                          {project.conversations?.map(conv => (
+                            <ConvRow key={conv.id} conv={conv} projectId={project.id} />
+                          ))}
+
+                          {/* New chat in project */}
+                          <button
+                            onClick={() => onNewChatInProject(project.id)}
+                            className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] transition-colors text-left"
+                            style={{ color: 'rgba(99,102,241,0.6)' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99,102,241,0.08)'; e.currentTarget.style.color = '#818cf8' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(99,102,241,0.6)' }}
+                          >
+                            <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>add</span>
+                            New chat
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
           {/* Sigils */}
           <div>
             <div className="px-2 mb-1.5 flex items-center justify-between">
@@ -198,7 +390,7 @@ export default function Sidebar({
             {sigils.length === 0 ? (
               <button
                 onClick={() => setSigilModal({ sigil: null })}
-                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-on-surface-variant/40 hover:text-on-surface-variant/70 hover:bg-white/03 transition-colors text-left"
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-on-surface-variant/40 hover:text-on-surface-variant/70 hover:bg-white/5 transition-colors text-left"
               >
                 <span className="material-symbols-outlined text-[14px]">add_circle</span>
                 Create your first sigil
@@ -206,18 +398,27 @@ export default function Sidebar({
             ) : (
               <div className="flex flex-col gap-px">
                 {sigils.map(sigil => (
-                  <button
-                    key={sigil.id}
-                    onClick={() => onNewChatWithSigil(sigil.id)}
-                    onContextMenu={e => handleSigilRightClick(e, sigil.id)}
-                    className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
-                    style={{ color: 'rgba(196,192,216,0.7)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
-                    onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
-                  >
-                    <span className="material-symbols-outlined shrink-0 text-[#6366f1]" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1" }}>auto_fix_high</span>
-                    <span className="text-[13px] truncate">{sigil.name}</span>
-                  </button>
+                  <div key={sigil.id} className="relative group/sigil">
+                    <button
+                      onClick={() => onNewChatWithSigil(sigil.id)}
+                      className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
+                      style={{ paddingRight: '2rem', color: 'rgba(196,192,216,0.7)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
+                    >
+                      <span className="material-symbols-outlined shrink-0 text-[#6366f1]" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1" }}>auto_fix_high</span>
+                      <span className="text-[13px] truncate">{sigil.name}</span>
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSigilMenu({ x: rect.left - 8, y: rect.bottom + 4, sigilId: sigil.id }) }}
+                      className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/sigil:opacity-100 transition-opacity"
+                      style={{ color: 'rgba(196,192,216,0.5)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+                    >
+                      <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
@@ -254,48 +455,75 @@ export default function Sidebar({
       </nav>
 
       {/* Conversation context menu */}
-      {contextMenu && (
+      {convMenu && (
         <>
-          <div className="fixed inset-0 z-40" onClick={closeMenu} />
+          <div className="fixed inset-0 z-40" onClick={() => setConvMenu(null)} />
           <div
             className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[160px]"
-            style={{ top: contextMenu.y, left: contextMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+            style={{ top: convMenu.y, left: convMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
           >
             {(() => {
-              const conv = conversations.find(c => c.id === contextMenu.convId)
+              const conv = [...conversations, ...projects.flatMap(p => p.conversations || [])].find(c => c.id === convMenu.convId)
               return (
                 <>
-                  <button
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
-                    onClick={() => { startRename(conv) }}
-                  >
+                  <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+                    onClick={() => { startRename(conv) }}>
                     <span className="material-symbols-outlined text-[16px] text-on-surface-variant">edit</span>
                     Rename
                   </button>
                   {conv?.pinned ? (
-                    <button
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
-                      onClick={() => { onUnpinConv(contextMenu.convId); closeMenu() }}
-                    >
+                    <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+                      onClick={() => { onUnpinConv(convMenu.convId); setConvMenu(null) }}>
                       <span className="material-symbols-outlined text-[16px] text-on-surface-variant">keep_off</span>
                       Unpin
                     </button>
                   ) : (
-                    <button
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
-                      onClick={() => { onPinConv(contextMenu.convId); closeMenu() }}
-                    >
+                    <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+                      onClick={() => { onPinConv(convMenu.convId); setConvMenu(null) }}>
                       <span className="material-symbols-outlined text-[16px] text-on-surface-variant">keep</span>
                       Pin
                     </button>
                   )}
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />
-                  <button
-                    className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
-                    onClick={() => { onDeleteConv(contextMenu.convId); closeMenu() }}
-                  >
+                  <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
+                    onClick={() => { onDeleteConv(convMenu.convId); setConvMenu(null) }}>
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                     Delete
+                  </button>
+                </>
+              )
+            })()}
+          </div>
+        </>
+      )}
+
+      {/* Project context menu */}
+      {projectMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setProjectMenu(null)} />
+          <div
+            className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[170px]"
+            style={{ top: projectMenu.y, left: projectMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+          >
+            {(() => {
+              const proj = projects.find(p => p.id === projectMenu.projectId)
+              return (
+                <>
+                  <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+                    onClick={() => startRenameProject(proj)}>
+                    <span className="material-symbols-outlined text-[16px] text-on-surface-variant">edit</span>
+                    Rename
+                  </button>
+                  <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+                    onClick={() => handleAddFileToProject(projectMenu.projectId)}>
+                    <span className="material-symbols-outlined text-[16px] text-on-surface-variant">attach_file</span>
+                    Add file
+                  </button>
+                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />
+                  <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
+                    onClick={() => handleDeleteProject(projectMenu.projectId)}>
+                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                    Delete project
                   </button>
                 </>
               )
@@ -312,21 +540,13 @@ export default function Sidebar({
             className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[160px]"
             style={{ top: sigilMenu.y, left: sigilMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
           >
-            <button
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
-              onClick={() => {
-                const s = sigils.find(x => x.id === sigilMenu.sigilId)
-                setSigilModal({ sigil: s })
-                setSigilMenu(null)
-              }}
-            >
+            <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+              onClick={() => { const s = sigils.find(x => x.id === sigilMenu.sigilId); setSigilModal({ sigil: s }); setSigilMenu(null) }}>
               <span className="material-symbols-outlined text-[16px] text-on-surface-variant">edit</span>
               Edit
             </button>
-            <button
-              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
-              onClick={() => handleSigilDelete(sigilMenu.sigilId)}
-            >
+            <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
+              onClick={() => handleSigilDelete(sigilMenu.sigilId)}>
               <span className="material-symbols-outlined text-[16px]">delete</span>
               Delete
             </button>

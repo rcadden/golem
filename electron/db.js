@@ -24,12 +24,26 @@ async function init() {
 
   db.run('PRAGMA foreign_keys = ON')
   db.run(`
+    CREATE TABLE IF NOT EXISTS projects (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS project_files (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      project_id INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      content TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now')),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
     CREATE TABLE IF NOT EXISTS conversations (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       title TEXT NOT NULL,
       model TEXT NOT NULL,
       pinned INTEGER DEFAULT 0,
       sigil_id INTEGER,
+      project_id INTEGER,
       created_at TEXT DEFAULT (datetime('now')),
       updated_at TEXT DEFAULT (datetime('now'))
     );
@@ -42,6 +56,7 @@ async function init() {
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );
     CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
+    CREATE INDEX IF NOT EXISTS idx_proj_files ON project_files(project_id);
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -54,17 +69,17 @@ async function init() {
     );
   `)
 
-  // Migrations for existing DBs
+  // Migrations for existing DBs (safe — fails silently if column already exists)
   try { db.run('ALTER TABLE conversations ADD COLUMN pinned INTEGER DEFAULT 0') } catch {}
   try { db.run('ALTER TABLE conversations ADD COLUMN sigil_id INTEGER') } catch {}
+  try { db.run('ALTER TABLE conversations ADD COLUMN project_id INTEGER') } catch {}
 
   persist()
 }
 
 function persist() {
   if (!db) return
-  const data = db.export()
-  fs.writeFileSync(DB_PATH, Buffer.from(data))
+  fs.writeFileSync(DB_PATH, Buffer.from(db.export()))
 }
 
 function run(sql, params = []) {
@@ -92,30 +107,60 @@ function insert(sql, params = []) {
   return row?.id ?? null
 }
 
+// ── Projects ──────────────────────────────────────────────────────────────────
+
+function listProjects() {
+  return all('SELECT * FROM projects ORDER BY name ASC')
+}
+
+function createProject(name) {
+  return insert('INSERT INTO projects (name) VALUES (?)', [name])
+}
+
+function renameProject(id, name) {
+  run('UPDATE projects SET name = ? WHERE id = ?', [name, id])
+}
+
+function deleteProject(id) {
+  run('DELETE FROM projects WHERE id = ?', [id])
+}
+
+function listProjectFiles(projectId) {
+  return all('SELECT * FROM project_files WHERE project_id = ? ORDER BY name ASC', [projectId])
+}
+
+function addProjectFile(projectId, name, content) {
+  return insert('INSERT INTO project_files (project_id, name, content) VALUES (?, ?, ?)', [projectId, name, content])
+}
+
+function removeProjectFile(id) {
+  run('DELETE FROM project_files WHERE id = ?', [id])
+}
+
 // ── Conversations ─────────────────────────────────────────────────────────────
 
+const CONV_SELECT = `
+  SELECT c.*, s.name as sigil_name
+  FROM conversations c
+  LEFT JOIN sigils s ON c.sigil_id = s.id
+`
+
 function listConversations() {
-  return all(`
-    SELECT c.*, s.name as sigil_name
-    FROM conversations c
-    LEFT JOIN sigils s ON c.sigil_id = s.id
-    ORDER BY c.pinned DESC, c.updated_at DESC
-  `)
+  return all(`${CONV_SELECT} WHERE c.project_id IS NULL ORDER BY c.pinned DESC, c.updated_at DESC`)
+}
+
+function listProjectConversations(projectId) {
+  return all(`${CONV_SELECT} WHERE c.project_id = ? ORDER BY c.pinned DESC, c.updated_at DESC`, [projectId])
 }
 
 function getConversation(id) {
-  return get(`
-    SELECT c.*, s.name as sigil_name
-    FROM conversations c
-    LEFT JOIN sigils s ON c.sigil_id = s.id
-    WHERE c.id = ?
-  `, [id])
+  return get(`${CONV_SELECT} WHERE c.id = ?`, [id])
 }
 
-function createConversation(title, model, sigilId = null) {
+function createConversation(title, model, sigilId = null, projectId = null) {
   return insert(
-    'INSERT INTO conversations (title, model, sigil_id) VALUES (?, ?, ?)',
-    [title, model, sigilId ?? null]
+    'INSERT INTO conversations (title, model, sigil_id, project_id) VALUES (?, ?, ?, ?)',
+    [title, model, sigilId ?? null, projectId ?? null]
   )
 }
 
@@ -204,7 +249,9 @@ function saveMemory(content) {
 
 module.exports = {
   init,
-  listConversations, getConversation, createConversation,
+  listProjects, createProject, renameProject, deleteProject,
+  listProjectFiles, addProjectFile, removeProjectFile,
+  listConversations, listProjectConversations, getConversation, createConversation,
   renameConversation, deleteConversation, touchConversation,
   pinConversation, unpinConversation,
   getMessages, addMessage, updateMessage, deleteMessage,

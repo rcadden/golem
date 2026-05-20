@@ -60,7 +60,7 @@ app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) creat
 
 ipcMain.handle('db:listConversations',  ()                        => db.listConversations())
 ipcMain.handle('db:getConversation',    (_, id)                   => db.getConversation(id))
-ipcMain.handle('db:createConversation', (_, title, model, sigilId) => db.createConversation(title, model, sigilId))
+ipcMain.handle('db:createConversation', (_, title, model, sigilId, projectId) => db.createConversation(title, model, sigilId, projectId))
 ipcMain.handle('db:renameConversation', (_, id, title)            => db.renameConversation(id, title))
 ipcMain.handle('db:deleteConversation', (_, id)                   => db.deleteConversation(id))
 ipcMain.handle('db:pinConversation',    (_, id)                   => db.pinConversation(id))
@@ -72,10 +72,19 @@ ipcMain.handle('db:deleteMessage',      (_, id)                   => db.deleteMe
 ipcMain.handle('db:getSetting',         (_, key, fb)              => db.getSetting(key, fb))
 ipcMain.handle('db:setSetting',         (_, key, val)             => db.setSetting(key, val))
 
-ipcMain.handle('db:listSigils',   ()                   => db.listSigils())
-ipcMain.handle('db:createSigil',  (_, name, content)   => db.createSigil(name, content))
-ipcMain.handle('db:updateSigil',  (_, id, name, content) => db.updateSigil(id, name, content))
-ipcMain.handle('db:deleteSigil',  (_, id)              => db.deleteSigil(id))
+ipcMain.handle('db:listSigils',   ()                       => db.listSigils())
+ipcMain.handle('db:createSigil',  (_, name, content)       => db.createSigil(name, content))
+ipcMain.handle('db:updateSigil',  (_, id, name, content)   => db.updateSigil(id, name, content))
+ipcMain.handle('db:deleteSigil',  (_, id)                  => db.deleteSigil(id))
+
+ipcMain.handle('db:listProjects',              ()                         => db.listProjects())
+ipcMain.handle('db:createProject',            (_, name)                  => db.createProject(name))
+ipcMain.handle('db:renameProject',            (_, id, name)              => db.renameProject(id, name))
+ipcMain.handle('db:deleteProject',            (_, id)                    => db.deleteProject(id))
+ipcMain.handle('db:listProjectConversations', (_, projectId)             => db.listProjectConversations(projectId))
+ipcMain.handle('db:listProjectFiles',         (_, projectId)             => db.listProjectFiles(projectId))
+ipcMain.handle('db:addProjectFile',           (_, projectId, name, content) => db.addProjectFile(projectId, name, content))
+ipcMain.handle('db:removeProjectFile',        (_, id)                    => db.removeProjectFile(id))
 
 ipcMain.handle('memory:load',     ()                   => db.loadMemory())
 ipcMain.handle('memory:save',     (_, content)         => db.saveMemory(content))
@@ -212,9 +221,17 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
     const sigil = db.getSigil(payload.sigilId)
     if (sigil?.content) basePrompt = sigil.content
   }
-  const systemPrompt = memory
-    ? `${basePrompt}\n\nUser context:\n${memory}`
-    : basePrompt
+
+  const parts = [basePrompt]
+  if (memory) parts.push(`User context:\n${memory}`)
+  if (payload.projectId) {
+    const files = db.listProjectFiles(payload.projectId)
+    if (files.length > 0) {
+      const fileContext = files.map(f => `<file name="${f.name}">\n${f.content}\n</file>`).join('\n\n')
+      parts.push(`Project files (always available for reference):\n${fileContext}`)
+    }
+  }
+  const systemPrompt = parts.join('\n\n')
 
   const messages = [{ role: 'system', content: systemPrompt }, ...payload.messages]
   const body = JSON.stringify({ model: payload.model, messages, stream: true, options: { temperature: 0.7, num_ctx: 8192 } })
