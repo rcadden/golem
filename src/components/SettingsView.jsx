@@ -91,7 +91,6 @@ export default function SettingsView({
       api.memory.save(memory),
       api.application.setLoginItem(launchAtStartup),
       api.db.setSetting('accent_color', accentColor),
-      api.db.setSetting('num_ctx', String(numCtx)),
     ])
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
