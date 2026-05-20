@@ -93,12 +93,18 @@ const PROJECT_TOOLS = {
       if (!fs.existsSync(fullPath)) throw new Error(`File not found: ${relPath}`)
       const stat = fs.statSync(fullPath)
       if (stat.isDirectory()) throw new Error(`"${relPath}" is a directory, not a file.`)
-      const content = fs.readFileSync(fullPath, 'utf8')
+      const raw = fs.readFileSync(fullPath, 'utf8')
+      const MAX_READ_CHARS = 20000
+      const truncated = raw.length > MAX_READ_CHARS
+      const content = truncated
+        ? raw.slice(0, MAX_READ_CHARS) + `\n\n[...truncated — file is ${stat.size} bytes total, showing first 20 KB. Use a byte offset or read a specific section if you need more.]`
+        : raw
       return {
         path: relPath,
         content,
         size_bytes: stat.size,
-        lines: content.split('\n').length,
+        lines: raw.split('\n').length,
+        truncated,
       }
     },
   },
