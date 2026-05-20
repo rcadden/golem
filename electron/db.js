@@ -58,8 +58,10 @@ async function init() {
     CREATE TABLE IF NOT EXISTS messages (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       conversation_id INTEGER NOT NULL,
-      role TEXT NOT NULL CHECK(role IN ('system','user','assistant')),
+      role TEXT NOT NULL CHECK(role IN ('system','user','assistant','tool')),
       content TEXT NOT NULL,
+      tool_calls TEXT,
+      tool_call_id TEXT,
       created_at TEXT DEFAULT (datetime('now')),
       FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
     );
@@ -73,6 +75,14 @@ async function init() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       content TEXT NOT NULL,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS skills (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'General',
+      system_prompt TEXT NOT NULL,
+      starter_message TEXT NOT NULL DEFAULT '',
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE TABLE IF NOT EXISTS telemetry (
@@ -92,6 +102,32 @@ async function init() {
   try { db.run('ALTER TABLE conversations ADD COLUMN pinned INTEGER DEFAULT 0') } catch {}
   try { db.run('ALTER TABLE conversations ADD COLUMN sigil_id INTEGER') } catch {}
   try { db.run('ALTER TABLE conversations ADD COLUMN project_id INTEGER') } catch {}
+  try { db.run('ALTER TABLE projects ADD COLUMN directory_path TEXT') } catch {}
+  try { db.run('ALTER TABLE conversations ADD COLUMN skill_id INTEGER') } catch {}
+  try { db.run('ALTER TABLE projects ADD COLUMN num_ctx INTEGER') } catch {}
+
+  // Tool-call migration: expand role CHECK and add tool_calls/tool_call_id columns.
+  // SQLite doesn't support altering CHECK in place, so rebuild the table if needed.
+  const cols = all('PRAGMA table_info(messages)').map(c => c.name)
+  if (!cols.includes('tool_calls')) {
+    db.run(`
+      CREATE TABLE messages_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        conversation_id INTEGER NOT NULL,
+        role TEXT NOT NULL CHECK(role IN ('system','user','assistant','tool')),
+        content TEXT NOT NULL,
+        tool_calls TEXT,
+        tool_call_id TEXT,
+        created_at TEXT DEFAULT (datetime('now')),
+        FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE
+      );
+      INSERT INTO messages_new (id, conversation_id, role, content, created_at)
+        SELECT id, conversation_id, role, content, created_at FROM messages;
+      DROP TABLE messages;
+      ALTER TABLE messages_new RENAME TO messages;
+      CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id);
+    `)
+  }
 
   persist()
 }
@@ -156,12 +192,29 @@ function removeProjectFile(id) {
   run('DELETE FROM project_files WHERE id = ?', [id])
 }
 
+function setProjectDirectory(id, dirPath) {
+  run('UPDATE projects SET directory_path = ? WHERE id = ?', [dirPath, id])
+}
+
+function getProject(id) {
+  return get('SELECT * FROM projects WHERE id = ?', [id])
+}
+
+function setProjectNumCtx(id, numCtx) {
+  run('UPDATE projects SET num_ctx = ? WHERE id = ?', [numCtx ?? null, id])
+}
+
+function clearProjectFiles(projectId) {
+  run('DELETE FROM project_files WHERE project_id = ?', [projectId])
+}
+
 // ── Conversations ─────────────────────────────────────────────────────────────
 
 const CONV_SELECT = `
-  SELECT c.*, s.name as sigil_name
+  SELECT c.*, s.name as sigil_name, sk.name as skill_name
   FROM conversations c
   LEFT JOIN sigils s ON c.sigil_id = s.id
+  LEFT JOIN skills sk ON c.skill_id = sk.id
 `
 
 function listConversations() {
@@ -176,10 +229,10 @@ function getConversation(id) {
   return get(`${CONV_SELECT} WHERE c.id = ?`, [id])
 }
 
-function createConversation(title, model, sigilId = null, projectId = null) {
+function createConversation(title, model, sigilId = null, projectId = null, skillId = null) {
   return insert(
-    'INSERT INTO conversations (title, model, sigil_id, project_id) VALUES (?, ?, ?, ?)',
-    [title, model, sigilId ?? null, projectId ?? null]
+    'INSERT INTO conversations (title, model, sigil_id, project_id, skill_id) VALUES (?, ?, ?, ?, ?)',
+    [title, model, sigilId ?? null, projectId ?? null, skillId ?? null]
   )
 }
 
@@ -209,8 +262,13 @@ function getMessages(convId) {
   return all('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC', [convId])
 }
 
-function addMessage(convId, role, content) {
-  const id = insert('INSERT INTO messages (conversation_id, role, content) VALUES (?, ?, ?)', [convId, role, content])
+function addMessage(convId, role, content, opts = {}) {
+  const toolCalls = opts.toolCalls ? JSON.stringify(opts.toolCalls) : null
+  const toolCallId = opts.toolCallId ?? null
+  const id = insert(
+    'INSERT INTO messages (conversation_id, role, content, tool_calls, tool_call_id) VALUES (?, ?, ?, ?, ?)',
+    [convId, role, content, toolCalls, toolCallId]
+  )
   run("UPDATE conversations SET updated_at = datetime('now') WHERE id = ?", [convId])
   return id
 }
@@ -243,6 +301,34 @@ function updateSigil(id, name, content) {
 
 function deleteSigil(id) {
   run('DELETE FROM sigils WHERE id = ?', [id])
+}
+
+// ── Skills ────────────────────────────────────────────────────────────────────
+
+function listSkills() {
+  return all('SELECT * FROM skills ORDER BY category ASC, name ASC')
+}
+
+function getSkill(id) {
+  return get('SELECT * FROM skills WHERE id = ?', [id])
+}
+
+function createSkill(name, category, systemPrompt, starterMessage) {
+  return insert(
+    'INSERT INTO skills (name, category, system_prompt, starter_message) VALUES (?, ?, ?, ?)',
+    [name, category, systemPrompt, starterMessage ?? '']
+  )
+}
+
+function updateSkill(id, name, category, systemPrompt, starterMessage) {
+  run(
+    'UPDATE skills SET name = ?, category = ?, system_prompt = ?, starter_message = ? WHERE id = ?',
+    [name, category, systemPrompt, starterMessage ?? '', id]
+  )
+}
+
+function deleteSkill(id) {
+  run('DELETE FROM skills WHERE id = ?', [id])
 }
 
 // ── Telemetry ─────────────────────────────────────────────────────────────────
@@ -319,12 +405,14 @@ module.exports = {
   init,
   logTelemetry, getTelemetrySummary,
   listProjects, createProject, renameProject, deleteProject,
+  getProject, setProjectDirectory, setProjectNumCtx, clearProjectFiles,
   listProjectFiles, addProjectFile, removeProjectFile,
   listConversations, listProjectConversations, getConversation, createConversation,
   renameConversation, deleteConversation, touchConversation,
   pinConversation, unpinConversation,
   getMessages, addMessage, updateMessage, deleteMessage,
   listSigils, getSigil, createSigil, updateSigil, deleteSigil,
+  listSkills, getSkill, createSkill, updateSkill, deleteSkill,
   getSetting, setSetting,
   loadMemory, saveMemory,
 }
