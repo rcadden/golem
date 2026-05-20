@@ -33,7 +33,7 @@ function git(args, cwd) {
   })
 }
 
-const BUILTIN_TOOLS = {
+const ALWAYS_TOOLS = {
   get_current_time: {
     schema: {
       type: 'function',
@@ -67,7 +67,9 @@ const BUILTIN_TOOLS = {
       }
     },
   },
+}
 
+const PROJECT_TOOLS = {
   read_file: {
     schema: {
       type: 'function',
@@ -345,14 +347,14 @@ const BUILTIN_TOOLS = {
   },
 }
 
-function listSchemas(_ctx = {}) {
-  // Future phases (code, web, MCP) will filter by ctx (e.g., only register code tools
-  // when ctx.projectId points at a folder-mode project). For Phase 1, always return all.
-  return Object.values(BUILTIN_TOOLS).map(t => t.schema)
+function listSchemas(ctx = {}) {
+  const tools = { ...ALWAYS_TOOLS }
+  if (ctx.projectDir) Object.assign(tools, PROJECT_TOOLS)
+  return Object.values(tools).map(t => t.schema)
 }
 
 async function execute(name, args, ctx = {}) {
-  const tool = BUILTIN_TOOLS[name]
+  const tool = ALWAYS_TOOLS[name] ?? PROJECT_TOOLS[name]
   if (!tool) throw new Error(`Unknown tool: ${name}`)
   return await tool.execute(args ?? {}, ctx)
 }
