@@ -1,20 +1,24 @@
 import { useState, useRef } from 'react'
 import SigilModal from './SigilModal'
+import SkillModal from './SkillModal'
 
 const ICON_SRC = '/icon.png'
 const api = window.golem
 
 export default function Sidebar({
   conversations, activeConvId, activeView,
-  projects, sigils,
-  onNewChat, onNewChatWithSigil, onNewChatInProject,
+  projects, sigils, skills = [],
+  onNewChat, onNewChatWithSigil, onNewChatWithSkill, onNewChatInProject,
   onSelectConv, onDeleteConv, onRenameConv, onPinConv, onUnpinConv, onExportConv,
   onSetView,
-  onSigilsChange, onProjectsChange,
+  onSigilsChange, onSkillsChange, onProjectsChange,
 }) {
   const [convMenu, setConvMenu] = useState(null)      // { x, y, convId }
   const [sigilMenu, setSigilMenu] = useState(null)    // { x, y, sigilId }
+  const [skillMenu, setSkillMenu] = useState(null)    // { x, y, skillId }
+  const [skillModal, setSkillModal] = useState(null)  // null | 'new' | skillId (number)
   const [projectMenu, setProjectMenu] = useState(null)// { x, y, projectId }
+  const [syncingProjectId, setSyncingProjectId] = useState(null)
   const [renamingId, setRenamingId] = useState(null)
   const [renameValue, setRenameValue] = useState('')
   const [renamingProjectId, setRenamingProjectId] = useState(null)
@@ -88,6 +92,35 @@ export default function Sidebar({
     await onProjectsChange()
   }
 
+  async function handleSetDirectory(projectId) {
+    setProjectMenu(null)
+    const dirPath = await api.dialog.openDirectory()
+    if (!dirPath) return
+    setSyncingProjectId(projectId)
+    try {
+      await api.db.syncProjectDirectory(projectId, dirPath)
+      await onProjectsChange()
+    } finally {
+      setSyncingProjectId(null)
+    }
+  }
+
+  async function handleSyncDirectory(projectId, dirPath) {
+    setSyncingProjectId(projectId)
+    try {
+      await api.db.syncProjectDirectory(projectId, dirPath)
+      await onProjectsChange()
+    } finally {
+      setSyncingProjectId(null)
+    }
+  }
+
+  async function handleDeleteSkill(skillId) {
+    await api.db.deleteSkill(skillId)
+    await onSkillsChange()
+    setSkillMenu(null)
+  }
+
   async function handleDeleteProject(id) {
     await api.db.deleteProject(id)
     setProjectMenu(null)
@@ -125,7 +158,7 @@ export default function Sidebar({
   // ── Shared nav item ───────────────────────────────────────────────────────────
 
   const navItem = (label, icon, viewName) => {
-    const isActive = (viewName === 'settings' || viewName === 'models' || viewName === 'stats') && activeView === viewName
+    const isActive = (viewName === 'settings' || viewName === 'stats') && activeView === viewName
     return (
       <button
         onClick={() => onSetView(viewName)}
@@ -243,7 +276,6 @@ export default function Sidebar({
         {/* Nav links */}
         <div className="px-3 pb-2 flex flex-col gap-0.5 no-drag">
           {navItem('Chat', 'chat', 'chat')}
-          {navItem('Models', 'deployed_code', 'models')}
         </div>
 
         {/* Search */}
@@ -380,6 +412,60 @@ export default function Sidebar({
                       {/* Expanded project contents */}
                       {isExpanded && (
                         <div className="pl-4 mt-0.5 flex flex-col gap-px">
+                          {/* Directory badge */}
+                          {project.directory_path && (
+                            <div className="flex items-center gap-1.5 px-2 py-1 mb-1">
+                              <span className="material-symbols-outlined text-[14px] opacity-40">folder_open</span>
+                              <span
+                                className="text-[11px] opacity-40 truncate flex-1"
+                                title={project.directory_path}
+                              >
+                                {project.directory_path.split(/[/\\]/).pop()}
+                              </span>
+                              <button
+                                onClick={() => handleSyncDirectory(project.id, project.directory_path)}
+                                disabled={syncingProjectId === project.id}
+                                className="text-[11px] opacity-50 hover:opacity-100 px-1.5 py-0.5 rounded hover:bg-white/10 disabled:opacity-25"
+                                title="Re-sync directory"
+                              >
+                                {syncingProjectId === project.id ? '…' : 'Sync'}
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Per-project context window override */}
+                          <div className="flex items-center gap-1.5 px-2 py-1 mb-1">
+                            <span className="material-symbols-outlined text-[14px] opacity-40">memory</span>
+                            <span className="text-[11px] opacity-40 shrink-0">ctx:</span>
+                            <div className="flex gap-1 flex-wrap">
+                              {[
+                                { label: 'Default', value: null },
+                                { label: '32K',     value: 32768 },
+                                { label: '64K',     value: 65536 },
+                                { label: '128K',    value: 131072 },
+                              ].map(opt => {
+                                const isActive = (project.num_ctx ?? null) === opt.value
+                                return (
+                                  <button
+                                    key={opt.label}
+                                    onClick={async () => {
+                                      await api.db.setProjectNumCtx(project.id, opt.value)
+                                      await onProjectsChange()
+                                    }}
+                                    className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                                      isActive
+                                        ? 'bg-[var(--accent)]/20 text-[var(--accent-light)]'
+                                        : 'opacity-40 hover:opacity-80 hover:bg-white/10'
+                                    }`}
+                                    title={opt.value ? `Override context window to ${opt.label} for this project` : 'Use the global context window setting'}
+                                  >
+                                    {opt.label}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </div>
+
                           {/* Files */}
                           {project.files?.map(file => (
                             <div key={file.id} className="relative group/file flex items-center gap-2 px-2 py-1.5 rounded-lg"
@@ -476,6 +562,71 @@ export default function Sidebar({
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
                     </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Skills */}
+          <div>
+            <div className="px-2 mb-1.5 flex items-center justify-between">
+              <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Skills</span>
+              <button
+                onClick={() => setSkillModal('new')}
+                className="p-0.5 rounded hover:bg-white/5 text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
+                title="New Skill"
+              >
+                <span className="material-symbols-outlined text-[14px]">add</span>
+              </button>
+            </div>
+
+            {skills.length === 0 ? (
+              <button
+                onClick={() => setSkillModal('new')}
+                className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-on-surface-variant/40 hover:text-on-surface-variant/70 hover:bg-white/5 transition-colors text-left"
+              >
+                <span className="material-symbols-outlined text-[14px]">auto_awesome</span>
+                Create your first skill
+              </button>
+            ) : (
+              <div className="flex flex-col gap-px">
+                {Object.entries(
+                  skills.reduce((acc, skill) => {
+                    const cat = skill.category || 'General'
+                    if (!acc[cat]) acc[cat] = []
+                    acc[cat].push(skill)
+                    return acc
+                  }, {})
+                ).map(([cat, catSkills]) => (
+                  <div key={cat}>
+                    <div className="px-2 py-0.5 text-[10px] opacity-30 uppercase tracking-wider">{cat}</div>
+                    {catSkills.map(skill => (
+                      <div
+                        key={skill.id}
+                        className="relative group/skill"
+                      >
+                        <button
+                          onClick={() => onNewChatWithSkill(skill.id)}
+                          className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
+                          style={{ paddingRight: '2rem', color: 'rgba(196,192,216,0.7)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
+                        >
+                          <span className="material-symbols-outlined shrink-0" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1", color: 'var(--accent)' }}>auto_awesome</span>
+                          <span className="text-[13px] truncate">{skill.name}</span>
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSkillMenu({ x: rect.left - 8, y: rect.bottom + 4, skillId: skill.id }) }}
+                          className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/skill:opacity-100 transition-opacity"
+                          style={{ color: 'rgba(196,192,216,0.5)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+                        >
+                          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
@@ -585,6 +736,11 @@ export default function Sidebar({
                     <span className="material-symbols-outlined text-[16px] text-on-surface-variant">attach_file</span>
                     Add file
                   </button>
+                  <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+                    onClick={() => handleSetDirectory(projectMenu.projectId)}>
+                    <span className="material-symbols-outlined text-[16px] text-on-surface-variant">folder_open</span>
+                    Set Directory
+                  </button>
                   <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />
                   <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
                     onClick={() => handleDeleteProject(projectMenu.projectId)}>
@@ -626,6 +782,37 @@ export default function Sidebar({
           sigil={sigilModal.sigil}
           onSave={handleSigilSave}
           onClose={() => setSigilModal(null)}
+        />
+      )}
+
+      {/* Skill context menu */}
+      {skillMenu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setSkillMenu(null)} />
+          <div
+            className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[160px]"
+            style={{ top: skillMenu.y, left: skillMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+          >
+            <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
+              onClick={() => { setSkillModal(skillMenu.skillId); setSkillMenu(null) }}>
+              <span className="material-symbols-outlined text-[16px] text-on-surface-variant">edit</span>
+              Edit
+            </button>
+            <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
+              onClick={() => handleDeleteSkill(skillMenu.skillId)}>
+              <span className="material-symbols-outlined text-[16px]">delete</span>
+              Delete
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Skill modal */}
+      {skillModal && (
+        <SkillModal
+          skillId={skillModal === 'new' ? null : skillModal}
+          onClose={() => setSkillModal(null)}
+          onSaved={onSkillsChange}
         />
       )}
     </>
