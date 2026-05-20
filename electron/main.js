@@ -465,6 +465,18 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       parts.push(`Project files (always available for reference):\n${fileContext}`)
     }
   }
+  if (projectDir) {
+    parts.push(
+      `You have access to filesystem and git tools for the project at: ${projectDir}\n\n` +
+      `IMPORTANT — always follow this order:\n` +
+      `1. Use list_directory to understand the project structure before making suggestions.\n` +
+      `2. Use read_file to read any file before editing or referencing it — never assume file contents.\n` +
+      `3. Use write_file only after reading the current file first.\n` +
+      `4. Use git_status before committing. Use git_add then git_commit in sequence.\n` +
+      `Never create files or directories that do not fit the existing project structure.\n` +
+      `Never hallucinate file paths — always verify with list_directory first.`
+    )
+  }
   const systemPrompt = parts.join('\n\n')
 
   // Tool capability — auto-detected per model
@@ -575,6 +587,12 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       durationMs: Date.now() - streamStart,
     })
 
+    event.sender.send('ollama:streamStats', {
+      promptTokens: totalPromptTokens,
+      completionTokens: totalCompletionTokens,
+      durationMs: Date.now() - streamStart,
+      ttftMs: ttftRef.value,
+    })
     event.sender.send('ollama:streamEnd', null)
     return { ok: true }
   } catch (err) {
