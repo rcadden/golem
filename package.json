@@ -1,13 +1,15 @@
 {
   "name": "golem",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Local Ollama chat desktop app",
+  "author": "Antigravity Projects",
   "main": "electron/main.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:vite\" \"npm run dev:electron\"",
     "dev:vite": "vite",
     "dev:electron": "wait-on http://localhost:5173 && electron .",
     "build": "vite build && electron-builder",
+    "pack": "vite build && electron-builder --dir",
     "build:vite": "vite build",
     "preview": "vite preview"
   },
@@ -33,18 +35,30 @@
   "build": {
     "appId": "com.antigravity.golem",
     "productName": "Golem",
-    "icon": "assets/icon.png",
+    "icon": "public/icon.png",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/sql.js/dist/**"
+    ],
     "directories": {
       "output": "dist-electron"
     },
     "files": [
       "dist/**/*",
       "electron/**/*",
-      "assets/**/*",
-      "node_modules/**/*"
+      "node_modules/**/*",
+      "!node_modules/electron/dist/**"
     ],
     "win": {
-      "target": "nsis"
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "public/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Golem"
     },
     "nativeRebuilder": "sequential"
   }

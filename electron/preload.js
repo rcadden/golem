@@ -37,6 +37,10 @@ contextBridge.exposeInMainWorld('golem', {
   dialog: {
     openFile: () => ipcRenderer.invoke('dialog:openFile'),
   },
+  application: {
+    getLoginItemEnabled: ()       => ipcRenderer.invoke('app:getLoginItemEnabled'),
+    setLoginItem:        (enable) => ipcRenderer.invoke('app:setLoginItem', enable),
+  },
   ollama: {
     listModels:      ()        => ipcRenderer.invoke('ollama:listModels'),
     ensureRunning:   ()        => ipcRenderer.invoke('ollama:ensureRunning'),

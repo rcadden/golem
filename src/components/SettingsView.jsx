@@ -6,25 +6,33 @@ export default function SettingsView({ models }) {
   const [defaultModel, setDefaultModel] = useState('')
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434')
   const [memory, setMemory] = useState('')
+  const [launchAtStartup, setLaunchAtStartup] = useState(false)
   const [saved, setSaved] = useState(false)
   const [testStatus, setTestStatus] = useState('')
 
   useEffect(() => {
     async function load() {
-      const dm = await api.db.getSetting('default_model', models[0] || '')
-      const url = await api.db.getSetting('ollama_url', 'http://localhost:11434')
-      const mem = await api.memory.load()
+      const [dm, url, mem, loginEnabled] = await Promise.all([
+        api.db.getSetting('default_model', models[0] || ''),
+        api.db.getSetting('ollama_url', 'http://localhost:11434'),
+        api.memory.load(),
+        api.application.getLoginItemEnabled(),
+      ])
       setDefaultModel(dm)
       setOllamaUrl(url)
       setMemory(mem)
+      setLaunchAtStartup(loginEnabled)
     }
     load()
   }, [])
 
   async function handleSave() {
-    await api.db.setSetting('default_model', defaultModel)
-    await api.db.setSetting('ollama_url', ollamaUrl)
-    await api.memory.save(memory)
+    await Promise.all([
+      api.db.setSetting('default_model', defaultModel),
+      api.db.setSetting('ollama_url', ollamaUrl),
+      api.memory.save(memory),
+      api.application.setLoginItem(launchAtStartup),
+    ])
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -96,6 +104,33 @@ export default function SettingsView({ models }) {
           </div>
         </section>
 
+        {/* System */}
+        <section className={card}>
+          <div className={cardHeader}>
+            <span className="material-symbols-outlined text-primary text-[20px]">settings_suggest</span>
+            <h3 className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>System</h3>
+          </div>
+          <div className={cardBody}>
+            <label className="flex items-center justify-between cursor-pointer group">
+              <div>
+                <div className="text-label-md text-on-surface">Launch at startup</div>
+                <div className="text-[12px] text-on-surface-variant/60 mt-0.5">Open Golem automatically when you log into Windows</div>
+              </div>
+              {/* Toggle */}
+              <div
+                onClick={() => setLaunchAtStartup(v => !v)}
+                className="relative shrink-0 w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer"
+                style={{ background: launchAtStartup ? '#6366f1' : 'rgba(255,255,255,0.12)' }}
+              >
+                <div
+                  className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+                  style={{ transform: launchAtStartup ? 'translateX(18px)' : 'translateX(2px)' }}
+                />
+              </div>
+            </label>
+          </div>
+        </section>
+
         {/* Memory */}
         <section className={card}>
           <div className={cardHeader}>
@@ -125,7 +160,7 @@ export default function SettingsView({ models }) {
               </div>
               <div>
                 <div className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Golem</div>
-                <div className="text-body-md text-on-surface-variant text-sm">Version 1.0.0</div>
+                <div className="text-body-md text-on-surface-variant text-sm">Version 0.2.0</div>
               </div>
             </div>
           </div>

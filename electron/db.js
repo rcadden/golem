@@ -1,7 +1,13 @@
 const path = require('path')
 const fs = require('fs')
+const { app } = require('electron')
 
-const DATA_DIR = path.join(__dirname, '..', 'data')
+// In dev: store data next to the project. In packaged builds: use the OS
+// user-data directory so data survives app updates and lives outside Program Files.
+const DATA_DIR = app.isPackaged
+  ? app.getPath('userData')
+  : path.join(__dirname, '..', 'data')
+
 const DB_PATH = path.join(DATA_DIR, 'golem.db')
 const MEMORY_PATH = path.join(DATA_DIR, 'memory.txt')
 
@@ -11,9 +17,11 @@ let db = null
 
 async function init() {
   const initSqlJs = require('sql.js')
-  const SQL = await initSqlJs({
-    locateFile: file => path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist', file),
-  })
+  // sql.js WASM is unpacked from the asar archive in packaged builds.
+  const wasmDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', 'sql.js', 'dist')
+    : path.join(__dirname, '..', 'node_modules', 'sql.js', 'dist')
+  const SQL = await initSqlJs({ locateFile: file => path.join(wasmDir, file) })
 
   if (fs.existsSync(DB_PATH)) {
     const buf = fs.readFileSync(DB_PATH)

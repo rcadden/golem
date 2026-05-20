@@ -273,6 +273,9 @@ ipcMain.on('ollama:stopStream', () => {
   if (activeStreamController) activeStreamController.abort = true
 })
 
+ipcMain.handle('app:getLoginItemEnabled', () => app.getLoginItemSettings().openAtLogin)
+ipcMain.handle('app:setLoginItem', (_, enable) => app.setLoginItemSettings({ openAtLogin: enable, openAsHidden: false }))
+
 ipcMain.on('window:setSize',  (_, w, h) => { if (mainWindow) mainWindow.setSize(w, h) })
 ipcMain.on('window:minimize', ()        => mainWindow?.minimize())
 ipcMain.on('window:maximize', ()        => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize())
