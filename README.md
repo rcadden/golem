@@ -1,59 +1,61 @@
 # Golem
 
-A local desktop chat frontend for [Ollama](https://ollama.com) models. Persistent conversations, streaming responses, markdown rendering, and static personal memory — no Docker, no backend, no cloud.
-
-Built with Python + Flet. Runs as a single process on Windows.
+A fast, private, local-first AI chat desktop application powered by [Ollama](https://ollama.com). No cloud, no accounts, no subscriptions. All your data stays on your local machine.
 
 ---
 
-## Requirements
+> [!IMPORTANT]
+> **Stack Migration Note:** Golem has been rewritten from Python + Flet to an **Electron 33 + React 19** architecture. The legacy Python code is deprecated.
 
-- Windows 11
-- Python 3.11+
-- [Ollama](https://ollama.com) installed and running (`ollama serve`)
-- At least one model pulled (e.g. `ollama pull qwen2.5-coder:7b`)
+## Core Features
+
+- 💬 **Local Chat Streaming** — Real-time offline streaming from your local Ollama models.
+- 📁 **Projects** — Group conversations in folders and automatically inject local file contexts into all chats within that project.
+- 🔮 **Sigils** — Create named system prompt presets (personas) to instantly spin up scoped chats.
+- 🎨 **Dynamic Accent Themes** — HSL/HWB/RGB/HSV slider color picker in Settings that instantly updates the cinema-dark theme.
+- 📎 **File Attachments** — Attach code or text files directly to your messages.
+- 📊 **Telemetry Stats** — Interactive telemetry dashboard showing 30-day token counts, message volume, and latency.
+- 🔍 **Real-time Search** — Instant filtering of conversations in the sidebar.
+- 📌 **Pin Conversations** — Keep your most important chats at the top of the sidebar.
+- 💾 **Export as Markdown** — Download your chat history to a clean markdown document.
+
+## System Requirements
+
+- **OS:** Windows 10 or Windows 11 (x64)
+- **Node.js:** v18.0.0 or higher
+- **Ollama:** Installed and running locally (`ollama serve`)
+- **Models:** At least one model pulled (e.g. `ollama pull qwen2.5-coder:7b`)
 
 ## Setup
 
 ```bash
-# Clone
+# Clone the repository
 git clone https://github.com/rcadden/golem.git
 cd golem
 
-# Create virtual environment
-python -m venv .venv
-.venv\Scripts\activate
-
 # Install dependencies
-pip install -r requirements.txt
+npm install
 
-# Run
-python main.py
+# Run in development mode (with Hot Module Replacement)
+npm run dev
 ```
 
-## Usage
+## Development Commands
 
-- **New Chat** — click "+ New Chat" in the sidebar
-- **Switch models** — use the model picker in the top bar
-- **Personal memory** — open Settings (⚙) and edit the memory text; it's injected as context into every conversation
-- **Stop generation** — click the Stop button while the model is responding
-- **Rename / Delete conversation** — right-click a conversation in the sidebar
-
-## Stack
-
-| Layer | Choice |
+| Command | Action |
 |---|---|
-| UI | [Flet](https://flet.dev) |
-| HTTP / Streaming | httpx (async) |
-| Persistence | SQLite (stdlib) |
-| Models | Ollama (local) |
+| `npm run dev` | Runs the Vite dev server and launches Electron with live hot reloading |
+| `npm run build` | Compiles the React UI and builds the NSIS production installer (`.exe`) |
+| `npm run release` | Compiles, builds the installer, and opens the output distribution folder |
+| `npm run pack` | Creates an unpacked executable directory (fast sanity check) |
 
-## Data
+## Data & Database
 
-All data lives in `data/` (gitignored):
-- `soren.db` — conversation and message history
-- `memory.txt` — personal context injected into every chat
+All configuration and conversation history is persisted locally using **SQLite** via `sql.js` (WASM):
+- **Development Database:** `data/soren.db` (gitignored, in the project root)
+- **Production Database:** `%APPDATA%/golem/` (electron userData path)
+- **Memory Context:** `data/memory.txt` (local static memory injected as system prompt context)
 
 ## License
 
-Private.
+Private / Personal Use.
