@@ -144,8 +144,8 @@ ipcMain.handle('project:syncDirectory', async (_, projectId, dirPath) => {
     '.css', '.html', '.xml', '.yaml', '.yml', '.toml', '.sh', '.bat',
     '.gitignore', '.env.example', '.sql', '.graphql', '.vue', '.svelte',
   ])
-  const MAX_FILE_BYTES = 100 * 1024
-  const MAX_TOTAL_BYTES = 1024 * 1024
+  const MAX_FILE_BYTES = 50 * 1024
+  const MAX_TOTAL_BYTES = 256 * 1024
 
   let totalBytes = 0
   const collected = []
@@ -367,7 +367,7 @@ ipcMain.handle('ollama:pullModel', async (event, name) => {
 
 ipcMain.handle('db:getTelemetrySummary', () => db.getTelemetrySummary())
 
-const MAX_TOOL_ITERATIONS = 8
+const MAX_TOOL_ITERATIONS = 4
 
 // One round-trip to Ollama. Streams content chunks via 'ollama:chunk' and resolves
 // with { content, toolCalls, promptTokens, completionTokens, ttftMs }.
@@ -442,7 +442,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
   activeStreamController = controller
 
   const project = payload.projectId ? db.getProject(payload.projectId) : null
-  const numCtx = project?.num_ctx ?? parseInt(db.getSetting('num_ctx', '16384'))
+  const numCtx = project?.num_ctx ?? parseInt(db.getSetting('num_ctx', '8192'))
   const projectDir = project?.directory_path ?? null
   const memory = db.loadMemory()
   let basePrompt = "You are a helpful assistant running locally on the user's machine via Ollama.\nRespond directly and concisely."
@@ -456,7 +456,9 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
 
   const parts = [basePrompt]
   if (memory) parts.push(`User context:\n${memory}`)
-  if (payload.projectId) {
+  if (payload.projectId && !projectDir) {
+    // Only inject synced files when no live directory is set.
+    // When a directory is active, the model uses read_file / list_directory on demand.
     const files = db.listProjectFiles(payload.projectId)
     if (files.length > 0) {
       const fileContext = files.map(f => `<file name="${f.name}">\n${f.content}\n</file>`).join('\n\n')
