@@ -108,6 +108,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       messages: allMsgs.map(m => ({ role: m.role, content: m.content })),
       sigilId: conv.sigil_id || null,
       projectId: conv.project_id || null,
+      conversationId: conv.id,
     }
     await api.ollama.startStream(payload)
   }
@@ -127,6 +128,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       messages: remaining.map(m => ({ role: m.role, content: m.content })),
       sigilId: conv.sigil_id || null,
       projectId: conv.project_id || null,
+      conversationId: conv.id,
     }
     await api.ollama.startStream(payload)
   }

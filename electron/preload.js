@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('golem', {
     updateSigil:   (id, name, content)     => ipcRenderer.invoke('db:updateSigil', id, name, content),
     deleteSigil:   (id)                    => ipcRenderer.invoke('db:deleteSigil', id),
 
+    getTelemetrySummary:      ()           => ipcRenderer.invoke('db:getTelemetrySummary'),
+
     listProjects:             ()           => ipcRenderer.invoke('db:listProjects'),
     createProject:            (name)       => ipcRenderer.invoke('db:createProject', name),
     renameProject:            (id, name)   => ipcRenderer.invoke('db:renameProject', id, name),

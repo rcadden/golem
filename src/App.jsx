@@ -3,6 +3,7 @@ import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
 import ModelsView from './components/ModelsView'
 import SettingsView from './components/SettingsView'
+import StatsView from './components/StatsView'
 import TitleBar from './components/TitleBar'
 
 const api = window.golem
@@ -164,6 +165,7 @@ export default function App() {
 
   const titleLabel = view === 'models' ? 'Models'
     : view === 'settings' ? 'Settings'
+    : view === 'stats' ? 'Stats'
     : (activeConv?.title ?? '')
 
   return (
@@ -209,6 +211,9 @@ export default function App() {
           )}
           {view === 'settings' && (
             <SettingsView models={models} />
+          )}
+          {view === 'stats' && (
+            <StatsView />
           )}
         </main>
       </div>

@@ -125,7 +125,7 @@ export default function Sidebar({
   // ── Shared nav item ───────────────────────────────────────────────────────────
 
   const navItem = (label, icon, viewName) => {
-    const isActive = (viewName === 'settings' || viewName === 'models') && activeView === viewName
+    const isActive = (viewName === 'settings' || viewName === 'models' || viewName === 'stats') && activeView === viewName
     return (
       <button
         onClick={() => onSetView(viewName)}
@@ -244,6 +244,7 @@ export default function Sidebar({
         <div className="px-3 pb-2 flex flex-col gap-0.5 no-drag">
           {navItem('Chat', 'chat', 'chat')}
           {navItem('Models', 'deployed_code', 'models')}
+          {navItem('Stats', 'bar_chart', 'stats')}
         </div>
 
         {/* Search */}

@@ -220,6 +220,8 @@ ipcMain.handle('ollama:pullModel', async (event, name) => {
   })
 })
 
+ipcMain.handle('db:getTelemetrySummary', () => db.getTelemetrySummary())
+
 ipcMain.handle('ollama:startStream', async (event, payload) => {
   if (activeStreamController) activeStreamController.abort = true
   const controller = { abort: false }
@@ -247,6 +249,9 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
   const body = JSON.stringify({ model: payload.model, messages, stream: true, options: { temperature: 0.7, num_ctx: 8192 } })
 
   return new Promise((resolve, reject) => {
+    const streamStart = Date.now()
+    let ttftMs = 0
+
     const req = http.request(`${OLLAMA_BASE}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
@@ -262,8 +267,22 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
           try {
             const parsed = JSON.parse(line)
             const content = parsed?.message?.content
-            if (content) event.sender.send('ollama:chunk', content)
-            if (parsed?.done) event.sender.send('ollama:streamEnd', null)
+            if (content) {
+              if (!ttftMs) ttftMs = Date.now() - streamStart
+              event.sender.send('ollama:chunk', content)
+            }
+            if (parsed?.done) {
+              const durationMs = Date.now() - streamStart
+              db.logTelemetry({
+                conversationId: payload.conversationId ?? null,
+                model: payload.model,
+                promptTokens: parsed.prompt_eval_count || 0,
+                completionTokens: parsed.eval_count || 0,
+                ttftMs,
+                durationMs,
+              })
+              event.sender.send('ollama:streamEnd', null)
+            }
           } catch {}
         }
       })

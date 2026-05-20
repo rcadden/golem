@@ -75,6 +75,17 @@ async function init() {
       content TEXT NOT NULL,
       created_at TEXT DEFAULT (datetime('now'))
     );
+    CREATE TABLE IF NOT EXISTS telemetry (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER,
+      model TEXT NOT NULL,
+      prompt_tokens INTEGER DEFAULT 0,
+      completion_tokens INTEGER DEFAULT 0,
+      ttft_ms INTEGER DEFAULT 0,
+      duration_ms INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_telemetry_date ON telemetry(created_at);
   `)
 
   // Migrations for existing DBs (safe — fails silently if column already exists)
@@ -234,6 +245,55 @@ function deleteSigil(id) {
   run('DELETE FROM sigils WHERE id = ?', [id])
 }
 
+// ── Telemetry ─────────────────────────────────────────────────────────────────
+
+function logTelemetry({ conversationId, model, promptTokens, completionTokens, ttftMs, durationMs }) {
+  insert(
+    'INSERT INTO telemetry (conversation_id, model, prompt_tokens, completion_tokens, ttft_ms, duration_ms) VALUES (?, ?, ?, ?, ?, ?)',
+    [conversationId ?? null, model, promptTokens, completionTokens, ttftMs, durationMs]
+  )
+}
+
+function getTelemetrySummary() {
+  const allTime = get(`
+    SELECT COUNT(*) as messages,
+           COALESCE(SUM(prompt_tokens + completion_tokens), 0) as total_tokens,
+           COALESCE(SUM(completion_tokens), 0) as completion_tokens,
+           COALESCE(AVG(NULLIF(ttft_ms, 0)), 0) as avg_ttft,
+           COALESCE(AVG(NULLIF(duration_ms, 0)), 0) as avg_duration
+    FROM telemetry
+  `)
+  const thisWeek = get(`
+    SELECT COUNT(*) as messages,
+           COALESCE(SUM(prompt_tokens + completion_tokens), 0) as total_tokens
+    FROM telemetry WHERE created_at >= datetime('now', '-7 days')
+  `)
+  const today = get(`
+    SELECT COUNT(*) as messages,
+           COALESCE(SUM(prompt_tokens + completion_tokens), 0) as total_tokens
+    FROM telemetry WHERE created_at >= datetime('now', 'start of day')
+  `)
+  const dailyLast30 = all(`
+    SELECT date(created_at) as day,
+           COUNT(*) as messages,
+           COALESCE(SUM(prompt_tokens + completion_tokens), 0) as tokens
+    FROM telemetry
+    WHERE created_at >= datetime('now', '-29 days')
+    GROUP BY date(created_at)
+    ORDER BY day ASC
+  `)
+  const topModels = all(`
+    SELECT model,
+           COUNT(*) as count,
+           COALESCE(SUM(prompt_tokens + completion_tokens), 0) as tokens
+    FROM telemetry
+    GROUP BY model
+    ORDER BY count DESC
+    LIMIT 6
+  `)
+  return { allTime, thisWeek, today, dailyLast30, topModels }
+}
+
 // ── Settings ──────────────────────────────────────────────────────────────────
 
 function getSetting(key, fallback = '') {
@@ -257,6 +317,7 @@ function saveMemory(content) {
 
 module.exports = {
   init,
+  logTelemetry, getTelemetrySummary,
   listProjects, createProject, renameProject, deleteProject,
   listProjectFiles, addProjectFile, removeProjectFile,
   listConversations, listProjectConversations, getConversation, createConversation,
