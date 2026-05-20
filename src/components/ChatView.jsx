@@ -471,7 +471,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Message Golem…"
+              placeholder={conv?.project_id ? 'Message Golem…' : 'Message Golem… — open a project with a directory set for file & git tools'}
               rows={1}
               className="w-full bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant text-body-md resize-none overflow-y-auto leading-6"
               style={{ minHeight: '44px', maxHeight: '128px' }}
@@ -494,8 +494,8 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
 
               {/* Right: tools badge + model picker + send/stop */}
               <div className="flex items-center gap-2">
-                {/* Tools-enabled badge */}
-                {toolCap === true && (
+                {/* Tools-enabled badge — only shown when tools are actually useful */}
+                {toolCap === true && conv?.project_id && (
                   <span
                     className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium"
                     style={{
@@ -503,10 +503,10 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                       border: '1px solid rgba(80,200,120,0.3)',
                       color: 'rgb(140,220,160)',
                     }}
-                    title={conv?.project_id ? 'Files, git, and time tools active for this project' : 'Tool calling active — time tools available'}
+                    title="Files, git tools active — model will read files before making changes"
                   >
                     <span className="material-symbols-outlined text-[10px]">build</span>
-                    {conv?.project_id ? 'Files · Git' : 'Tools'}
+                    Files · Git
                   </span>
                 )}
                 {toolCap === false && (

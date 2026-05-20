@@ -33,41 +33,9 @@ function git(args, cwd) {
   })
 }
 
-const ALWAYS_TOOLS = {
-  get_current_time: {
-    schema: {
-      type: 'function',
-      function: {
-        name: 'get_current_time',
-        description: 'Returns the current date and time on the user\'s machine, already converted to their local timezone. Use the `local` field directly when telling the user the time — it is pre-formatted.',
-        parameters: {
-          type: 'object',
-          properties: {},
-        },
-      },
-    },
-    execute: async () => {
-      const now = new Date()
-      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
-      const local = new Intl.DateTimeFormat('en-US', {
-        timeZone: timezone,
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: 'numeric',
-        minute: '2-digit',
-        hour12: true,
-        timeZoneName: 'short',
-      }).format(now)
-      return {
-        local,
-        iso_utc: now.toISOString(),
-        timezone,
-      }
-    },
-  },
-}
+// ALWAYS_TOOLS: offered in every conversation regardless of project context.
+// Currently empty — all tools require a project directory (see PROJECT_TOOLS).
+const ALWAYS_TOOLS = {}
 
 const PROJECT_TOOLS = {
   read_file: {
