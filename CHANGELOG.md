@@ -4,6 +4,38 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.5.0] — 2026-05-20
+
+### Added
+- **Self-build tools** — Golem can now read, write, list, and create files within
+  any directory-linked project, and make git commits and pushes, all via the model.
+  Tools are scoped: only offered when a project has a directory set.
+- **Configurable context window** — global preset (8K/16K/32K/64K/128K) in
+  Settings; per-project override in the expanded sidebar project view.
+- **Live stream timer** — elapsed time ticks up while the model is responding;
+  locks to actual token count on completion (e.g. `4s · 847 tokens`).
+- **Collapsible file list** — directory-synced projects collapse their file list
+  by default so they don't push conversations off screen.
+
+### Changed
+- File injection into system prompt is now skipped when live filesystem tools are
+  active — the model reads files on demand instead of receiving a pre-loaded dump.
+- Tool-use guidance injected into system prompt when a project directory is set,
+  instructing the model to read before writing and verify paths before assuming.
+- Tools badge now shows **Files · Git** (project context) or nothing (no project);
+  removed the misleading "Tools" badge for plain conversations.
+- Placeholder hint added to the input box when no project is active.
+- Default `num_ctx` lowered to 8,192 (was 16,384) — opt up in Settings.
+- `read_file` output capped at 20 KB to prevent context flooding.
+- Tool iteration limit reduced from 8 to 4.
+- File sync limits restored: 50 KB/file, 256 KB total.
+
+### Fixed
+- Removed `get_current_time` tool (unnecessary, caused false "Tools active" signal).
+- `num_ctx` no longer redundantly saved in `handleSave` (immediate persistence only).
+
+---
+
 ## [0.3.0] — 2026-05-19
 
 ### Added
