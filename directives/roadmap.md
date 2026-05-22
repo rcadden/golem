@@ -27,7 +27,7 @@ _Features that pay off once the core is solid._
 - [x] **Message editing** — click a sent user message to edit it; clears subsequent messages and regenerates · RICE: 7·3·0.8·3 = 5.6
 - [x] **Conversation search** — search bar in sidebar filters all conversations (Recent + Projects) by title in real-time
 - [x] **Export conversation** — three-dots menu → "Export as Markdown"; opens save dialog with slugified filename
-- [ ] **Context window indicator** — subtle token usage bar near input; warns when approaching model limit · RICE: 5·2·0.7·2 = 3.5
+- [x] **Context window indicator** — subtle token usage bar near input; warns when approaching model limit · RICE: 5·2·0.7·2 = 3.5
 - [ ] **Keyboard shortcuts** — Ctrl+N new chat, Escape cancel stream · RICE: deprioritized per user preference
 
 ---

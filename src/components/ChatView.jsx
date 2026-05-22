@@ -446,15 +446,46 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       {/* Input area */}
       <div className="shrink-0 px-6 pb-6" style={{ background: 'linear-gradient(to top, #0f0f16 80%, transparent)' }}>
         <div className="max-w-[860px] mx-auto">
-          {/* Stream stats / live timer */}
+          {/* Stream stats / live timer + context bar */}
           {(streaming || streamStats) && (
-            <div className="flex items-center justify-end mb-1 h-5">
-              <span className="text-[11px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
-                {streamStats
-                  ? `${Math.round(streamStats.durationMs / 1000)}s · ${streamStats.completionTokens.toLocaleString()} tokens`
-                  : `${elapsed}s`
-                }
-              </span>
+            <div className="mb-1 space-y-1">
+              <div className="flex items-center justify-end h-5">
+                <span className="text-[11px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                  {streamStats
+                    ? `${Math.round(streamStats.durationMs / 1000)}s · ${streamStats.completionTokens.toLocaleString()} tokens`
+                    : `${elapsed}s`
+                  }
+                </span>
+              </div>
+              {streamStats?.numCtx && (() => {
+                const used = streamStats.promptTokens + streamStats.completionTokens
+                const pct = Math.min(used / streamStats.numCtx, 1)
+                const warn = pct >= 0.9
+                const caution = pct >= 0.75
+                const barColor = warn
+                  ? 'rgb(239,68,68)'
+                  : caution
+                    ? 'rgb(234,179,8)'
+                    : 'rgba(var(--accent-rgb),0.6)'
+                return (
+                  <div
+                    className="flex items-center gap-2"
+                    title={`Context: ${used.toLocaleString()} / ${streamStats.numCtx.toLocaleString()} tokens (${Math.round(pct * 100)}%)`}
+                  >
+                    <div className="flex-1 h-[2px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${pct * 100}%`, background: barColor }}
+                      />
+                    </div>
+                    {caution && (
+                      <span className="text-[10px] tabular-nums shrink-0" style={{ color: barColor }}>
+                        {Math.round(pct * 100)}%
+                      </span>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           )}
           {/* Attached file pills */}

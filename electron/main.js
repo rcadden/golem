@@ -592,6 +592,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       completionTokens: totalCompletionTokens,
       durationMs: Date.now() - streamStart,
       ttftMs: ttftRef.value,
+      numCtx,
     })
     event.sender.send('ollama:streamEnd', null)
     return { ok: true }
