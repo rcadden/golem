@@ -46,7 +46,7 @@ function CodeBlock({ language, code }) {
   )
 }
 
-export function ToolCard({ name, args, result, isError, isRunning }) {
+export function ToolCard({ name, args, result, isError, isRunning, onAction }) {
   const [expanded, setExpanded] = useState(false)
 
   const argsStr = (() => {
@@ -118,6 +118,42 @@ export function ToolCard({ name, args, result, isError, isRunning }) {
             </div>
           </div>
         )}
+
+        {/* Golem action buttons — rendered when a save tool succeeds */}
+        {!isRunning && !isError && result?.saved && onAction && (() => {
+          const action = result._golem_action
+          if (action === 'test_sigil') {
+            return (
+              <div className="mt-2 flex items-center gap-2 pl-1">
+                <span className="text-[11px] text-on-surface-variant/50">Sigil saved —</span>
+                <button
+                  onClick={() => onAction({ type: 'test_sigil', id: result.sigil_id, name: result.name })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                  style={{ background: 'rgba(var(--accent-rgb),0.18)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
+                >
+                  <span className="material-symbols-outlined text-[13px]">play_arrow</span>
+                  Test this sigil
+                </button>
+              </div>
+            )
+          }
+          if (action === 'use_skill') {
+            return (
+              <div className="mt-2 flex items-center gap-2 pl-1">
+                <span className="text-[11px] text-on-surface-variant/50">Skill saved —</span>
+                <button
+                  onClick={() => onAction({ type: 'use_skill', id: result.skill_id, name: result.name })}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-colors"
+                  style={{ background: 'rgba(var(--accent-rgb),0.18)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
+                >
+                  <span className="material-symbols-outlined text-[13px]">rocket_launch</span>
+                  Launch skill
+                </button>
+              </div>
+            )
+          }
+          return null
+        })()}
       </div>
     </div>
   )

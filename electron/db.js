@@ -143,12 +143,13 @@ function seedBuiltinSkills() {
 A sigil in Golem is a named system prompt that shapes how the AI behaves for a specific role or use case. Great sigils are specific, not generic — they define a persona, a purpose, and clear guardrails.
 
 Your process:
-1. Ask the user what role or context they want the sigil for (one question at a time)
+1. Ask the user what role or context they want the sigil for (one question at a time — don't ask everything at once)
 2. Clarify tone, expertise level, any constraints or must-haves
 3. Draft a concise system prompt — typically 3–8 sentences
-4. Refine based on feedback until the user is satisfied
+4. Present the draft and ask for feedback or approval
+5. When the user approves, call the save_sigil tool to save it directly to Golem
 
-When the sigil is ready, present the final version inside a fenced code block so it's easy to copy directly into the Sigil creation form. Do not add commentary inside the block — only the sigil content itself.`,
+Do not present the final sigil in a code block. Use the save_sigil tool — the user will get a confirmation and a button to test it immediately in a new chat.`,
       starter_message: "Let's build a sigil. What role or use case do you have in mind?",
     },
     {
@@ -157,38 +158,32 @@ When the sigil is ready, present the final version inside a fenced code block so
       system_prompt: `You are a Skill Architect — an expert at designing AI workflow templates called "skills" for Golem.
 
 A skill has four parts:
-- **Name** — Short, action-oriented (e.g. "Code Reviewer", "Meeting Summarizer")
-- **Category** — Groups skills in the sidebar (e.g. "Development", "Writing", "Research")
-- **System prompt** — The AI's standing instructions for this skill context
-- **Starter message** — Optional pre-filled message that appears in the input when the skill is launched, prompting the user to provide their content
+- Name — Short, action-oriented (e.g. "Code Reviewer", "Meeting Summarizer")
+- Category — Groups skills in the sidebar (e.g. "Development", "Writing", "Research")
+- System prompt — The AI's standing instructions for this skill context
+- Starter message — Optional pre-filled message shown in the input when the skill launches, prompting the user to provide their content (e.g. "Paste your code below:")
 
 Your process:
-1. Ask what the user wants to accomplish with the skill (one question at a time)
+1. Ask what the user wants to accomplish with the skill (one question at a time — don't ask everything at once)
 2. Clarify the domain, tone, and any specific behaviors or constraints
-3. Draft all four components
-4. Refine until satisfied
+3. Draft all four fields and present them clearly for review
+4. Refine until the user is satisfied
+5. When the user approves, call the save_skill tool to save it directly to Golem
 
-When the skill is ready, present it in this exact format so the user can copy each field directly into the Skill creation form:
-
-**Name:** ...
-**Category:** ...
-
-**System prompt:**
-\`\`\`
-...
-\`\`\`
-
-**Starter message:**
-\`\`\`
-...
-\`\`\``,
+Do not output the skill as formatted text blocks. Use the save_skill tool — the user will see a confirmation and can launch the skill from the sidebar immediately.`,
       starter_message: "Let's build a skill. What do you want it to help you do?",
     },
   ]
 
   for (const skill of BUILTINS) {
     const existing = get('SELECT id FROM skills WHERE name = ? AND category = ?', [skill.name, skill.category])
-    if (!existing) {
+    if (existing) {
+      // Always update built-in prompts so improvements land on next launch
+      run(
+        'UPDATE skills SET system_prompt = ?, starter_message = ? WHERE id = ?',
+        [skill.system_prompt, skill.starter_message, existing.id]
+      )
+    } else {
       insert(
         'INSERT INTO skills (name, category, system_prompt, starter_message) VALUES (?, ?, ?, ?)',
         [skill.name, skill.category, skill.system_prompt, skill.starter_message]

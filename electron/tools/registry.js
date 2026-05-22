@@ -37,6 +37,56 @@ function git(args, cwd) {
 // Currently empty — all tools require a project directory (see PROJECT_TOOLS).
 const ALWAYS_TOOLS = {}
 
+// GOLEM_TOOLS: injected when the active skill's category is 'Golem'.
+// These tools let the model interact with Golem's own data (sigils, skills).
+const GOLEM_TOOLS = {
+  save_sigil: {
+    schema: {
+      type: 'function',
+      function: {
+        name: 'save_sigil',
+        description: 'Save the approved sigil directly to Golem. Call this only after the user has reviewed and approved the name and system prompt content.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name:    { type: 'string', description: 'A short, descriptive name for the sigil.' },
+            content: { type: 'string', description: 'The full system prompt content for the sigil.' },
+          },
+          required: ['name', 'content'],
+        },
+      },
+    },
+    execute: async ({ name, content }, ctx) => {
+      const id = ctx.db.createSigil(name.trim(), content.trim())
+      return { saved: true, sigil_id: id, name: name.trim(), _golem_action: 'test_sigil' }
+    },
+  },
+
+  save_skill: {
+    schema: {
+      type: 'function',
+      function: {
+        name: 'save_skill',
+        description: 'Save the approved skill directly to Golem. Call this only after the user has reviewed and approved all four fields.',
+        parameters: {
+          type: 'object',
+          properties: {
+            name:            { type: 'string', description: 'Short, action-oriented skill name.' },
+            category:        { type: 'string', description: 'Category for grouping in the sidebar (e.g. "Development", "Writing").' },
+            system_prompt:   { type: 'string', description: 'The system prompt that defines this skill.' },
+            starter_message: { type: 'string', description: 'Optional pre-filled message shown in the input when the skill launches. Pass empty string if none.' },
+          },
+          required: ['name', 'category', 'system_prompt'],
+        },
+      },
+    },
+    execute: async ({ name, category, system_prompt, starter_message = '' }, ctx) => {
+      const id = ctx.db.createSkill(name.trim(), category.trim(), system_prompt.trim(), starter_message.trim())
+      return { saved: true, skill_id: id, name: name.trim(), category: category.trim(), _golem_action: 'use_skill' }
+    },
+  },
+}
+
 const PROJECT_TOOLS = {
   read_file: {
     schema: {
@@ -322,13 +372,14 @@ const PROJECT_TOOLS = {
 }
 
 function listSchemas(ctx = {}) {
-  const tools = { ...ALWAYS_TOOLS }
-  if (ctx.projectDir) Object.assign(tools, PROJECT_TOOLS)
-  return Object.values(tools).map(t => t.schema)
+  const allTools = { ...ALWAYS_TOOLS }
+  if (ctx.projectDir)       Object.assign(allTools, PROJECT_TOOLS)
+  if (ctx.skillCategory === 'Golem') Object.assign(allTools, GOLEM_TOOLS)
+  return Object.values(allTools).map(t => t.schema)
 }
 
 async function execute(name, args, ctx = {}) {
-  const tool = ALWAYS_TOOLS[name] ?? PROJECT_TOOLS[name]
+  const tool = ALWAYS_TOOLS[name] ?? PROJECT_TOOLS[name] ?? GOLEM_TOOLS[name]
   if (!tool) throw new Error(`Unknown tool: ${name}`)
   return await tool.execute(args ?? {}, ctx)
 }

@@ -82,7 +82,7 @@ const SUGGESTIONS = [
   { icon: 'code_blocks',   label: 'Review my code',    prompt: 'Review my code for improvements.' },
 ]
 
-export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvUpdate, pendingInput, onConsumePendingInput }) {
+export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvUpdate, onGolemAction, pendingInput, onConsumePendingInput }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -174,10 +174,11 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
           const firstUser = msgs.find(m => m.role === 'user')
           const title = (firstUser?.content || '').slice(0, 50) + ((firstUser?.content || '').length > 50 ? '…' : '')
           await api.db.renameConversation(conv.id, title)
-          await onConvUpdate()
         }
         setMessages(msgs)
       }
+      // Always notify parent — refreshes convs, projects, sigils, and skills
+      await onConvUpdate()
       setLiveSegments([])
     })
 
@@ -403,6 +404,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                 args={item.args}
                 result={item.result}
                 isError={item.isError}
+                onAction={onGolemAction}
               />
             ) : (
               <MessageBubble

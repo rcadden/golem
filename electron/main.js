@@ -481,11 +481,15 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
 
   // Tool capability — auto-detected per model
   const toolsEnabled = await getToolCapability(payload.model)
+  const activeSkill = payload.skillId ? db.getSkill(payload.skillId) : null
   const ctx = {
     conversationId: payload.conversationId ?? null,
     projectId: payload.projectId ?? null,
     projectDir,
     sender: event.sender,
+    skillId: payload.skillId ?? null,
+    skillCategory: activeSkill?.category ?? null,
+    db,
   }
   const toolSchemas = toolsEnabled ? tools.listSchemas(ctx) : []
 

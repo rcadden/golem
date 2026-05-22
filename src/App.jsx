@@ -273,7 +273,21 @@ export default function App() {
               ollamaReady={ollamaReady}
               onNewChat={handleNewChat}
               onConvUpdate={async () => {
-                await Promise.all([refreshConversations(), refreshProjects()])
+                await Promise.all([
+                  refreshConversations(),
+                  refreshProjects(),
+                  refreshSigils(),
+                  refreshSkills(),
+                ])
+              }}
+              onGolemAction={async ({ type, id }) => {
+                if (type === 'test_sigil') {
+                  await refreshSigils()
+                  await handleNewChatWithSigil(id)
+                } else if (type === 'use_skill') {
+                  await refreshSkills()
+                  await handleNewChatWithSkill(id)
+                }
               }}
               pendingInput={pendingInput}
               onConsumePendingInput={() => setPendingInput('')}
