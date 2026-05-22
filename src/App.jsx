@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { applyAccentColor } from './utils/accent'
 import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
-import ModelsView from './components/ModelsView'
 import SettingsView from './components/SettingsView'
 import StatsView from './components/StatsView'
 import TitleBar from './components/TitleBar'
@@ -15,8 +14,26 @@ export default function App() {
   const [activeConvId, setActiveConvId] = useState(null)
   const [models, setModels] = useState([])
   const [sigils, setSigils] = useState([])
+  const [skills, setSkills] = useState([])
   const [projects, setProjects] = useState([])   // each has .files and .conversations
   const [ollamaReady, setOllamaReady] = useState(null)
+  const [pendingInput, setPendingInput] = useState('')
+
+  // App-level model-pull state so progress survives navigation between views.
+  const [pulling, setPulling] = useState(false)
+  const [pullModel, setPullModel] = useState('')
+  const [pullStatus, setPullStatus] = useState('')
+  const [pullProgress, setPullProgress] = useState(null)
+
+  useEffect(() => {
+    api.ollama.onPullProgress(data => {
+      setPullStatus(data.status || '')
+      if (data.total && data.completed) {
+        setPullProgress(Math.round((data.completed / data.total) * 100))
+      }
+    })
+    return () => api.ollama.offPullProgress()
+  }, [])
 
   useEffect(() => {
     async function init() {
@@ -28,15 +45,17 @@ export default function App() {
         const m = await api.ollama.listModels()
         setModels(m)
       }
-      const [convs, sigs] = await Promise.all([
+      const [convs, sigs, skls] = await Promise.all([
         api.db.listConversations(),
         api.db.listSigils(),
+        api.db.listSkills(),
       ])
       setConversations(convs)
       setSigils(sigs)
+      setSkills(skls)
       const projs = await loadProjectsWithData()
       setProjects(projs)
-      if (convs.length > 0) setActiveConvId(convs[0].id)
+      // Always open to empty state — user can select from sidebar
     }
     init()
   }, [])
@@ -61,6 +80,11 @@ export default function App() {
     setSigils(sigs)
   }, [])
 
+  const refreshSkills = useCallback(async () => {
+    const s = await api.db.listSkills()
+    setSkills(s)
+  }, [])
+
   const refreshProjects = useCallback(async () => {
     const projs = await loadProjectsWithData()
     setProjects(projs)
@@ -71,6 +95,31 @@ export default function App() {
     const m = await api.ollama.listModels()
     setModels(m)
   }, [])
+
+  const startPull = useCallback(async (name) => {
+    const target = (name || '').trim()
+    if (!target || pulling) return
+    setPulling(true)
+    setPullModel(target)
+    setPullStatus('Starting…')
+    setPullProgress(null)
+    try {
+      await api.ollama.pullModel(target)
+      setPullStatus('Done')
+      await refreshModels()
+    } catch (e) {
+      setPullStatus(`Error: ${e.message}`)
+    } finally {
+      setPulling(false)
+      setPullProgress(null)
+      setTimeout(() => { setPullStatus(''); setPullModel('') }, 3000)
+    }
+  }, [pulling, refreshModels])
+
+  const deleteModel = useCallback(async (name) => {
+    await api.ollama.deleteModel(name)
+    await refreshModels()
+  }, [refreshModels])
 
   async function getDefaultModel() {
     const defaultModel = await api.db.getSetting('default_model', models[0] || '')
@@ -93,6 +142,17 @@ export default function App() {
     const id = await api.db.createConversation(sigil?.name ?? 'New Chat', model, sigilId, null)
     await refreshConversations()
     setActiveConvId(id)
+    setView('chat')
+  }
+
+  async function handleNewChatWithSkill(skillId) {
+    const model = await getDefaultModel()
+    if (!model) return
+    const skill = skills.find(s => s.id === skillId)
+    const id = await api.db.createConversation(skill?.name ?? 'New Chat', model, null, null, skillId)
+    await refreshConversations()
+    setActiveConvId(id)
+    if (skill?.starter_message) setPendingInput(skill.starter_message)
     setView('chat')
   }
 
@@ -166,14 +226,19 @@ export default function App() {
     ?? projects.flatMap(p => p.conversations || []).find(c => c.id === activeConvId)
     ?? null
 
-  const titleLabel = view === 'models' ? 'Models'
-    : view === 'settings' ? 'Settings'
+  const titleLabel = view === 'settings' ? 'Settings'
     : view === 'stats' ? 'Stats'
     : (activeConv?.title ?? '')
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-background text-on-surface">
-      <TitleBar title={titleLabel} />
+      <TitleBar
+        title={titleLabel}
+        pulling={pulling}
+        pullModel={pullModel}
+        pullProgress={pullProgress}
+        pullStatus={pullStatus}
+      />
 
       <div className="flex flex-1 overflow-hidden">
         <Sidebar
@@ -181,9 +246,11 @@ export default function App() {
           activeConvId={activeConvId}
           activeView={view}
           sigils={sigils}
+          skills={skills}
           projects={projects}
           onNewChat={handleNewChat}
           onNewChatWithSigil={handleNewChatWithSigil}
+          onNewChatWithSkill={handleNewChatWithSkill}
           onNewChatInProject={handleNewChatInProject}
           onSelectConv={handleSelectConv}
           onDeleteConv={handleDeleteConv}
@@ -193,6 +260,7 @@ export default function App() {
           onExportConv={handleExportConv}
           onSetView={setView}
           onSigilsChange={refreshSigils}
+          onSkillsChange={refreshSkills}
           onProjectsChange={refreshProjects}
         />
 
@@ -207,13 +275,20 @@ export default function App() {
               onConvUpdate={async () => {
                 await Promise.all([refreshConversations(), refreshProjects()])
               }}
+              pendingInput={pendingInput}
+              onConsumePendingInput={() => setPendingInput('')}
             />
           )}
-          {view === 'models' && (
-            <ModelsView models={models} onRefresh={refreshModels} />
-          )}
           {view === 'settings' && (
-            <SettingsView models={models} />
+            <SettingsView
+              models={models}
+              pulling={pulling}
+              pullModel={pullModel}
+              pullStatus={pullStatus}
+              pullProgress={pullProgress}
+              onStartPull={startPull}
+              onDeleteModel={deleteModel}
+            />
           )}
           {view === 'stats' && (
             <StatsView />
