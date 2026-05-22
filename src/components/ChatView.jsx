@@ -249,6 +249,28 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     await api.ollama.startStream(payload)
   }
 
+  async function handleEditMessage(msgId, newContent) {
+    if (streaming || !conv || !selectedModel) return
+    const idx = messages.findIndex(m => m.id === msgId)
+    if (idx === -1) return
+    await api.db.updateMessage(msgId, newContent)
+    const toDelete = messages.slice(idx + 1)
+    for (const m of toDelete) await api.db.deleteMessage(m.id)
+    const remaining = await api.db.getMessages(conv.id)
+    setMessages(remaining)
+    setError('')
+    setStreaming(true)
+    setLiveSegments([])
+    await api.ollama.startStream({
+      model: selectedModel,
+      messages: serializeForOllama(remaining),
+      sigilId: conv.sigil_id ?? null,
+      skillId: conv.skill_id ?? null,
+      projectId: conv.project_id ?? null,
+      conversationId: conv.id,
+    })
+  }
+
   async function handleRetry() {
     if (streaming || !conv || !selectedModel) return
     // Drop everything after the last user message — that's the assistant's
@@ -388,6 +410,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                 role={item.message.role}
                 content={item.message.content}
                 onRetry={item.message.id === lastAssistantId ? handleRetry : null}
+                onEdit={!streaming && item.message.role === 'user' ? (newContent) => handleEditMessage(item.message.id, newContent) : null}
               />
             )
           ))}

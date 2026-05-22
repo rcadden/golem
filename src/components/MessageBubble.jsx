@@ -46,9 +46,106 @@ function CodeBlock({ language, code }) {
   )
 }
 
-export default function MessageBubble({ role, content, isStreaming, isThinking, onRetry }) {
+export function ToolCard({ name, args, result, isError, isRunning }) {
+  const [expanded, setExpanded] = useState(false)
+
+  const argsStr = (() => {
+    if (args == null) return ''
+    if (typeof args === 'string') return args
+    try { return JSON.stringify(args) } catch { return String(args) }
+  })()
+
+  const resultStr = (() => {
+    if (result == null) return ''
+    if (typeof result === 'string') return result
+    try { return JSON.stringify(result, null, 2) } catch { return String(result) }
+  })()
+
+  const statusColor = isRunning
+    ? 'rgba(180,180,200,0.7)'
+    : isError
+      ? 'rgb(255,140,140)'
+      : 'var(--accent-light)'
+  const statusIcon = isRunning ? 'progress_activity' : isError ? 'error' : 'check_circle'
+
+  return (
+    <div className="flex items-start gap-4 mb-4 px-1">
+      <div className="w-7 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors hover:bg-surface-container-high"
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.07)',
+            color: 'rgba(196,192,216,0.85)',
+          }}
+        >
+          <span
+            className={`material-symbols-outlined text-[14px] ${isRunning ? 'animate-spin' : ''}`}
+            style={{ color: statusColor }}
+          >
+            {statusIcon}
+          </span>
+          <span className="material-symbols-outlined text-[14px]" style={{ color: 'var(--accent-mid)' }}>build</span>
+          <span className="font-mono text-[12px] text-on-surface">{name || 'tool'}</span>
+          {argsStr && !expanded && (
+            <span className="font-mono text-[11px] text-on-surface-variant/60 truncate max-w-[280px]">
+              {argsStr}
+            </span>
+          )}
+          <span className="ml-auto material-symbols-outlined text-[14px] text-on-surface-variant/50">
+            {expanded ? 'expand_less' : 'expand_more'}
+          </span>
+        </button>
+
+        {expanded && (
+          <div className="mt-1 pl-3 pr-2 py-2 rounded-lg space-y-2"
+            style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {argsStr && (
+              <div>
+                <div className="text-[10px] uppercase tracking-wider text-on-surface-variant/60 mb-1">Args</div>
+                <pre className="font-mono text-[11px] text-on-surface/80 whitespace-pre-wrap break-all">{argsStr}</pre>
+              </div>
+            )}
+            <div>
+              <div className="text-[10px] uppercase tracking-wider text-on-surface-variant/60 mb-1">
+                {isRunning ? 'Running…' : isError ? 'Error' : 'Result'}
+              </div>
+              <pre className="font-mono text-[11px] text-on-surface/80 whitespace-pre-wrap break-all max-h-[300px] overflow-auto">
+                {resultStr || (isRunning ? '…' : '')}
+              </pre>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function MessageBubble({ role, content, isStreaming, isThinking, onRetry, onEdit }) {
   const [copied, setCopied] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editValue, setEditValue] = useState('')
   const isUser = role === 'user'
+
+  function startEdit() {
+    setEditValue(content)
+    setEditing(true)
+  }
+
+  function cancelEdit() {
+    setEditing(false)
+    setEditValue('')
+  }
+
+  function saveEdit() {
+    const trimmed = editValue.trim()
+    if (!trimmed) return
+    setEditing(false)
+    setEditValue('')
+    onEdit(trimmed)
+  }
 
   function copy() {
     navigator.clipboard.writeText(content)
@@ -76,17 +173,70 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
 
   // ── User message ──────────────────────────────────────────────────────────────
   if (isUser) {
+    if (editing) {
+      return (
+        <div className="flex justify-end mb-6 px-1">
+          <div className="flex flex-col items-end gap-2 max-w-[72%] w-full">
+            <textarea
+              autoFocus
+              value={editValue}
+              onChange={e => setEditValue(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit() }
+                if (e.key === 'Escape') cancelEdit()
+              }}
+              onInput={e => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px' }}
+              className="w-full rounded-2xl rounded-br-sm px-4 py-3 text-[15px] leading-relaxed text-on-surface resize-none outline-none"
+              style={{
+                background: 'linear-gradient(135deg, rgba(var(--accent-rgb),0.28) 0%, rgba(var(--accent-rgb),0.18) 100%)',
+                border: '1px solid rgba(var(--accent-rgb),0.55)',
+                boxShadow: '0 0 0 2px rgba(var(--accent-rgb),0.2), 0 2px 12px rgba(var(--accent-rgb),0.12)',
+                minHeight: '52px',
+              }}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={cancelEdit}
+                className="px-3 py-1.5 rounded-lg text-[12px] text-on-surface-variant hover:text-on-surface transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={!editValue.trim()}
+                className="px-3 py-1.5 rounded-lg text-[12px] font-medium disabled:opacity-40 transition-colors"
+                style={{ background: 'rgba(var(--accent-rgb),0.25)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.35)' }}
+              >
+                Save &amp; send
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+
     return (
-      <div className="flex justify-end mb-6 px-1">
-        <div
-          className="max-w-[72%] rounded-2xl rounded-br-sm px-4 py-3 text-[15px] leading-relaxed text-on-surface whitespace-pre-wrap"
-          style={{
-            background: 'linear-gradient(135deg, rgba(var(--accent-rgb),0.28) 0%, rgba(var(--accent-rgb),0.18) 100%)',
-            border: '1px solid rgba(var(--accent-rgb),0.35)',
-            boxShadow: '0 2px 12px rgba(var(--accent-rgb),0.12)',
-          }}
-        >
-          {content}
+      <div className="flex justify-end mb-6 px-1 group/user">
+        <div className="flex flex-col items-end gap-1.5 max-w-[72%]">
+          <div
+            className="rounded-2xl rounded-br-sm px-4 py-3 text-[15px] leading-relaxed text-on-surface whitespace-pre-wrap"
+            style={{
+              background: 'linear-gradient(135deg, rgba(var(--accent-rgb),0.28) 0%, rgba(var(--accent-rgb),0.18) 100%)',
+              border: '1px solid rgba(var(--accent-rgb),0.35)',
+              boxShadow: '0 2px 12px rgba(var(--accent-rgb),0.12)',
+            }}
+          >
+            {content}
+          </div>
+          {onEdit && (
+            <button
+              onClick={startEdit}
+              className="opacity-0 group-hover/user:opacity-100 transition-opacity flex items-center gap-1 text-[11px] text-on-surface-variant/50 hover:text-on-surface-variant px-1 py-0.5 rounded"
+            >
+              <span className="material-symbols-outlined text-[12px]">edit</span>
+              Edit
+            </button>
+          )}
         </div>
       </div>
     )

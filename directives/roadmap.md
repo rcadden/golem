@@ -24,7 +24,7 @@ _Features that pay off once the core is solid._
 
 - [x] **Projects** — conversation folders with injected file context; files listed inside the project in sidebar; all chats in a project share the file context automatically; raw injection (no RAG)
 - [ ] **Three-dots hover menu** — already implemented; hover `⋯` replaces double-click rename _(done as UX fix)_
-- [ ] **Message editing** — click a sent user message to edit it; clears subsequent messages and regenerates · RICE: 7·3·0.8·3 = 5.6
+- [x] **Message editing** — click a sent user message to edit it; clears subsequent messages and regenerates · RICE: 7·3·0.8·3 = 5.6
 - [x] **Conversation search** — search bar in sidebar filters all conversations (Recent + Projects) by title in real-time
 - [x] **Export conversation** — three-dots menu → "Export as Markdown"; opens save dialog with slugified filename
 - [ ] **Context window indicator** — subtle token usage bar near input; warns when approaching model limit · RICE: 5·2·0.7·2 = 3.5
