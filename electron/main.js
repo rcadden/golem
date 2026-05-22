@@ -6,6 +6,7 @@ const { execFile, spawn } = require('child_process')
 const fs = require('fs')
 const db = require('./db')
 const tools = require('./tools/registry')
+const { autoUpdater } = require('electron-updater')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
@@ -50,9 +51,40 @@ function createWindow() {
   mainWindow.on('unmaximize', () => mainWindow.webContents.send('window:maximizeChange', false))
 }
 
+// ── Auto-update ───────────────────────────────────────────────────────────────
+// Only active in packaged builds — never in dev (would throw on missing feed).
+function setupAutoUpdater() {
+  if (isDev) return
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('update-available', info => {
+    mainWindow?.webContents.send('updater:available', { version: info.version })
+  })
+
+  autoUpdater.on('update-downloaded', () => {
+    mainWindow?.webContents.send('updater:downloaded')
+  })
+
+  autoUpdater.on('error', err => {
+    // Silent in production — update failures shouldn't interrupt the user
+    console.error('[updater]', err?.message ?? err)
+  })
+
+  // Check on launch, then every 4 hours
+  autoUpdater.checkForUpdates().catch(() => {})
+  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 60 * 60 * 1000)
+}
+
+ipcMain.on('updater:install', () => {
+  autoUpdater.quitAndInstall(false, true)
+})
+
 app.whenReady().then(async () => {
   await db.init()
   createWindow()
+  setupAutoUpdater()
 })
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })

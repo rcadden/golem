@@ -85,4 +85,11 @@ contextBridge.exposeInMainWorld('golem', {
     onMaximizeChange:  (cb)   => ipcRenderer.on('window:maximizeChange', (_, v) => cb(v)),
     offMaximizeChange: ()     => ipcRenderer.removeAllListeners('window:maximizeChange'),
   },
+  updater: {
+    onAvailable:    (cb) => ipcRenderer.on('updater:available',  (_, info) => cb(info)),
+    onDownloaded:   (cb) => ipcRenderer.on('updater:downloaded', ()        => cb()),
+    offAvailable:   ()   => ipcRenderer.removeAllListeners('updater:available'),
+    offDownloaded:  ()   => ipcRenderer.removeAllListeners('updater:downloaded'),
+    install:        ()   => ipcRenderer.send('updater:install'),
+  },
 })

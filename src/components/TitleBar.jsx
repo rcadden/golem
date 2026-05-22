@@ -2,13 +2,21 @@ import { useState, useEffect } from 'react'
 
 const api = window.golem
 
-export default function TitleBar({ title = '' }) {
+export default function TitleBar({ title = '', pulling = false, pullModel = '', pullProgress = null, pullStatus = '' }) {
   const [isMaximized, setIsMaximized] = useState(false)
+  const [updateAvailable, setUpdateAvailable] = useState(null)   // { version } | null
+  const [updateReady, setUpdateReady]     = useState(false)
 
   useEffect(() => {
     api.window.isMaximized().then(setIsMaximized)
     api.window.onMaximizeChange(setIsMaximized)
-    return () => api.window.offMaximizeChange()
+    api.updater.onAvailable(info => setUpdateAvailable(info))
+    api.updater.onDownloaded(() => setUpdateReady(true))
+    return () => {
+      api.window.offMaximizeChange()
+      api.updater.offAvailable()
+      api.updater.offDownloaded()
+    }
   }, [])
 
   return (
@@ -20,6 +28,63 @@ export default function TitleBar({ title = '' }) {
       <div className="no-drag px-4 text-[11px] font-medium tracking-wide truncate max-w-[60%]"
         style={{ color: 'rgba(196,192,216,0.35)' }}>
         {title}
+      </div>
+
+      {/* Center: status chips */}
+      <div className="no-drag flex items-center gap-2">
+        {pulling && (
+          <div
+            className="flex items-center gap-2 px-3 py-0.5 rounded-full text-[10px]"
+            style={{
+              background: 'rgba(var(--accent-rgb),0.12)',
+              border: '1px solid rgba(var(--accent-rgb),0.25)',
+              color: 'var(--accent-light)',
+            }}
+            title={pullStatus}
+          >
+            <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>progress_activity</span>
+            <span className="font-mono">{pullModel}</span>
+            {pullProgress !== null && (
+              <>
+                <span className="opacity-60">·</span>
+                <span>{pullProgress}%</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Update available — downloading */}
+        {updateAvailable && !updateReady && (
+          <div
+            className="flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px]"
+            style={{
+              background: 'rgba(80,200,120,0.10)',
+              border: '1px solid rgba(80,200,120,0.25)',
+              color: 'rgb(120,210,150)',
+            }}
+            title={`Golem ${updateAvailable.version} is downloading in the background`}
+          >
+            <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>downloading</span>
+            <span>v{updateAvailable.version} downloading…</span>
+          </div>
+        )}
+
+        {/* Update ready to install */}
+        {updateReady && (
+          <button
+            onClick={() => api.updater.install()}
+            className="flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px] transition-opacity hover:opacity-80"
+            style={{
+              background: 'rgba(80,200,120,0.18)',
+              border: '1px solid rgba(80,200,120,0.4)',
+              color: 'rgb(140,230,170)',
+            }}
+            title="Click to restart and install the update"
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 1" }}>update</span>
+            Update ready — restart to install
+          </button>
+        )}
       </div>
 
       {/* Right: Windows controls */}

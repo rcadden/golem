@@ -15,6 +15,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "electron-updater": "^6.8.3",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-markdown": "^10.1.0",
@@ -51,7 +52,14 @@
       "!node_modules/electron/dist/**"
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "public/icon.png"
     },
     "nsis": {
@@ -61,6 +69,11 @@
       "createStartMenuShortcut": true,
       "shortcutName": "Golem"
     },
-    "nativeRebuilder": "sequential"
+    "nativeRebuilder": "sequential",
+    "publish": {
+      "provider": "github",
+      "owner": "rcadden",
+      "repo": "golem"
+    }
   }
 }

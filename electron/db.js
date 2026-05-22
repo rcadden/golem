@@ -1,6 +1,7 @@
 const path = require('path')
 const fs = require('fs')
 const { app } = require('electron')
+const starterPack = require('./seeds/starter-pack')
 
 // In dev: store data next to the project. In packaged builds: use the OS
 // user-data directory so data survives app updates and lives outside Program Files.
@@ -130,6 +131,7 @@ async function init() {
   }
 
   seedBuiltinSkills()
+  seedStarterPack()
   persist()
 }
 
@@ -190,6 +192,30 @@ Do not output the skill as formatted text blocks. Use the save_skill tool — th
       )
     }
   }
+}
+
+function seedStarterPack() {
+  const versionKey = `starter_pack_seeded_${starterPack.SEED_VERSION}`
+  if (getSetting(versionKey, '')) return  // already seeded this version
+
+  for (const sigil of starterPack.SIGILS) {
+    const existing = get('SELECT id FROM sigils WHERE name = ?', [sigil.name])
+    if (!existing) {
+      insert('INSERT INTO sigils (name, content) VALUES (?, ?)', [sigil.name, sigil.content])
+    }
+  }
+
+  for (const skill of starterPack.SKILLS) {
+    const existing = get('SELECT id FROM skills WHERE name = ? AND category = ?', [skill.name, skill.category])
+    if (!existing) {
+      insert(
+        'INSERT INTO skills (name, category, system_prompt, starter_message) VALUES (?, ?, ?, ?)',
+        [skill.name, skill.category, skill.system_prompt, skill.starter_message ?? '']
+      )
+    }
+  }
+
+  setSetting(versionKey, '1')
 }
 
 function persist() {

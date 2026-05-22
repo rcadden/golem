@@ -11,13 +11,15 @@ A fast, private, local-first AI chat desktop application powered by [Ollama](htt
 
 - 💬 **Local Chat Streaming** — Real-time offline streaming from your local Ollama models.
 - 📁 **Projects** — Group conversations in folders and automatically inject local file contexts into all chats within that project.
-- 🔮 **Sigils** — Create named system prompt presets (personas) to instantly spin up scoped chats.
+- 🔮 **Sigils** — Named system prompt presets (personas) to instantly spin up scoped chats. Includes a built-in Sigil Architect to guide creation.
+- 🧰 **Skills** — Workflow templates that shape what you're doing (code review, debugging, brainstorming, etc.). Includes a built-in Skill Architect.
 - 🎨 **Dynamic Accent Themes** — HSL/HWB/RGB/HSV slider color picker in Settings that instantly updates the cinema-dark theme.
 - 📎 **File Attachments** — Attach code or text files directly to your messages.
 - 📊 **Telemetry Stats** — Interactive telemetry dashboard showing 30-day token counts, message volume, and latency.
 - 🔍 **Real-time Search** — Instant filtering of conversations in the sidebar.
 - 📌 **Pin Conversations** — Keep your most important chats at the top of the sidebar.
 - 💾 **Export as Markdown** — Download your chat history to a clean markdown document.
+- 🔄 **Auto-Updates** — Golem checks for new GitHub releases on launch and every 4 hours. Updates download silently and prompt for a one-click restart.
 
 ## System Requirements
 
@@ -55,6 +57,37 @@ All configuration and conversation history is persisted locally using **SQLite**
 - **Development Database:** `data/soren.db` (gitignored, in the project root)
 - **Production Database:** `%APPDATA%/golem/` (electron userData path)
 - **Memory Context:** `data/memory.txt` (local static memory injected as system prompt context)
+
+## Publishing a Release (Auto-Update)
+
+Golem uses `electron-updater` with GitHub Releases as the update feed. To ship an update that users receive automatically:
+
+```bash
+# 1. Bump the version in package.json and src/components/SettingsView.jsx
+# 2. Build and publish (requires GH_TOKEN env var with repo write access)
+GH_TOKEN=your_token npm run build -- --publish always
+```
+
+`electron-builder` will upload the installer and `latest.yml` feed file to the GitHub release. Installed copies of Golem will detect it within 4 hours.
+
+## Prompt Library Attribution
+
+The starter pack of sigils and skills bundled with Golem (`electron/seeds/starter-pack.js`) includes templates inspired by **[Anthropic's Claude Prompt Library](https://docs.anthropic.com/en/resources/prompt-library/library)**. The following skills draw on Anthropic's published examples:
+
+| Golem Skill | Inspired by |
+|---|---|
+| Code Clarifier | *Code clarifier* |
+| SQL Writer | *SQL sorcerer* |
+| Regex Builder | *Regex recipe* |
+| Essay Polisher | *Prose polisher* |
+| Grammar Fixer | *Grammar genie* |
+| Pros & Cons | *Pros and cons* |
+| Flashcard Creator | *Study buddy* |
+| Meeting Notes | *Meeting scribe* |
+
+These are adapted for use with local models (model-agnostic, no Claude-specific references) and are not direct copies of Anthropic's text. Credit and thanks to the Anthropic team for the original prompt designs.
+
+The **Sigil Architect** and **Skill Architect** skills, and the **Code Reviewer**, **Debug Assistant**, **Commit Message Writer**, **Brainstorming Partner**, and **Email Drafter** skills are original to Golem, influenced by the author's use of [Claude Code](https://claude.ai/code).
 
 ## License
 
