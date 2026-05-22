@@ -373,15 +373,45 @@ const PROJECT_TOOLS = {
 
 function listSchemas(ctx = {}) {
   const allTools = { ...ALWAYS_TOOLS }
-  if (ctx.projectDir)       Object.assign(allTools, PROJECT_TOOLS)
+  if (ctx.projectDir)                Object.assign(allTools, PROJECT_TOOLS)
   if (ctx.skillCategory === 'Golem') Object.assign(allTools, GOLEM_TOOLS)
-  return Object.values(allTools).map(t => t.schema)
+
+  const schemas = Object.values(allTools).map(t => t.schema)
+
+  // MCP tools — convert MCP Tool objects to Ollama function-schema format.
+  // ctx.mcpTools: [{ serverId, serverName, tool }]
+  if (ctx.mcpTools) {
+    for (const { serverName, tool } of ctx.mcpTools) {
+      schemas.push({
+        type: 'function',
+        function: {
+          // Prefix with server name to avoid collisions across MCP servers.
+          name:        `mcp__${serverName.replace(/\W+/g, '_')}__${tool.name}`,
+          description: tool.description || '',
+          parameters:  tool.inputSchema ?? { type: 'object', properties: {} },
+        },
+      })
+    }
+  }
+
+  return schemas
 }
 
 async function execute(name, args, ctx = {}) {
   const tool = ALWAYS_TOOLS[name] ?? PROJECT_TOOLS[name] ?? GOLEM_TOOLS[name]
-  if (!tool) throw new Error(`Unknown tool: ${name}`)
-  return await tool.execute(args ?? {}, ctx)
+  if (tool) return await tool.execute(args ?? {}, ctx)
+
+  // MCP tool — name format: mcp__<serverName>__<toolName>
+  if (ctx.mcpTools && ctx.mcpManager && name.startsWith('mcp__')) {
+    const mcpEntry = ctx.mcpTools.find(
+      e => `mcp__${e.serverName.replace(/\W+/g, '_')}__${e.tool.name}` === name
+    )
+    if (mcpEntry) {
+      return await ctx.mcpManager.callTool(mcpEntry.serverId, mcpEntry.tool.name, args)
+    }
+  }
+
+  throw new Error(`Unknown tool: ${name}`)
 }
 
 module.exports = { listSchemas, execute }

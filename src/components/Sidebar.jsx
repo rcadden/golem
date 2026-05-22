@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import SigilModal from './SigilModal'
 import SkillModal from './SkillModal'
 
@@ -25,11 +25,34 @@ export default function Sidebar({
   const [renameProjectValue, setRenameProjectValue] = useState('')
   const [expandedProjects, setExpandedProjects] = useState(new Set())
   const [expandedFileLists, setExpandedFileLists] = useState(new Set())
+  // MCP servers — loaded once on mount for phase-3 project associations
+  const [mcpServers, setMcpServers] = useState([])
+  // projectId → Set of associated server ids
+  const [projectMcpMap, setProjectMcpMap] = useState({})
   const [sigilModal, setSigilModal] = useState(null)
   const [search, setSearch] = useState('')
   const renameRef = useRef(null)
   const renameProjectRef = useRef(null)
   const searchRef = useRef(null)
+
+  useEffect(() => {
+    api.mcp.listServers().then(servers => setMcpServers(servers ?? [])).catch(() => {})
+  }, [])
+
+  // Load project MCP associations when a project is expanded
+  useEffect(() => {
+    if (expandedProjects.size === 0 || mcpServers.length === 0) return
+    expandedProjects.forEach(async projectId => {
+      if (projectMcpMap[projectId]) return // already loaded
+      try {
+        const associated = await api.mcp.getProjectServers(projectId)
+        setProjectMcpMap(prev => ({
+          ...prev,
+          [projectId]: new Set(associated.map(s => s.id)),
+        }))
+      } catch {}
+    })
+  }, [expandedProjects, mcpServers.length])
 
   // ── Conversation menu ─────────────────────────────────────────────────────────
 
@@ -466,6 +489,44 @@ export default function Sidebar({
                               })}
                             </div>
                           </div>
+
+                          {/* MCP server associations */}
+                          {mcpServers.filter(s => s.enabled).length > 0 && (
+                            <div className="flex items-start gap-1.5 px-2 py-1 mb-1">
+                              <span className="material-symbols-outlined text-[14px] opacity-40 mt-0.5">electrical_services</span>
+                              <div className="flex flex-wrap gap-1">
+                                {mcpServers.filter(s => s.enabled).map(server => {
+                                  const associated = projectMcpMap[project.id]?.has(server.id) ?? false
+                                  return (
+                                    <button
+                                      key={server.id}
+                                      onClick={async () => {
+                                        if (associated) {
+                                          await api.mcp.removeProjectServer(project.id, server.id)
+                                        } else {
+                                          await api.mcp.addProjectServer(project.id, server.id)
+                                        }
+                                        setProjectMcpMap(prev => {
+                                          const cur = new Set(prev[project.id] ?? [])
+                                          if (associated) cur.delete(server.id)
+                                          else cur.add(server.id)
+                                          return { ...prev, [project.id]: cur }
+                                        })
+                                      }}
+                                      className={`text-[10px] px-1.5 py-0.5 rounded transition-colors ${
+                                        associated
+                                          ? 'bg-[var(--accent)]/20 text-[var(--accent-light)]'
+                                          : 'opacity-40 hover:opacity-80 hover:bg-white/10'
+                                      }`}
+                                      title={associated ? `Disable ${server.name} for this project` : `Enable ${server.name} for this project`}
+                                    >
+                                      {server.name}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+                            </div>
+                          )}
 
                           {/* Files — collapsible, default collapsed for directory-backed projects */}
                           {project.files?.length > 0 && (() => {

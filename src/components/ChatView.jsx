@@ -92,12 +92,16 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   const [liveSegments, setLiveSegments] = useState([])
   const [selectedModel, setSelectedModel] = useState('')
   const [modelMenuOpen, setModelMenuOpen] = useState(false)
+  const [paramsOpen, setParamsOpen] = useState(false)
+  // convParams: overrides for this conversation { temperature, numCtx } — null means use global default
+  const [convParams, setConvParams] = useState({ temperature: null, numCtx: null })
   // toolCap: true | false | null (unknown / not yet probed)
   const [toolCap, setToolCap] = useState(null)
   const [streamStats, setStreamStats] = useState(null)   // { promptTokens, completionTokens, durationMs, ttftMs } — set on streamEnd
   const [elapsed, setElapsed] = useState(0)              // seconds since stream started, for live timer
   const [error, setError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState([])
+  const [runningModels, setRunningModels] = useState([]) // [{ name, size_vram }] from /api/ps
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
   const elapsedIntervalRef = useRef(null)
@@ -117,12 +121,20 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       const model = conv?.model || defaultModel || models[0] || ''
       setSelectedModel(model)
       setAttachedFiles([])
+      setParamsOpen(false)
       if (conv) {
         const msgs = await api.db.getMessages(conv.id)
         setMessages(msgs)
+        // Load any saved per-conversation params
+        setConvParams({
+          temperature: conv.temperature ?? null,
+          numCtx: conv.num_ctx ?? null,
+        })
       } else {
         setMessages([])
+        setConvParams({ temperature: null, numCtx: null })
       }
+      api.ollama.getRunningModels().then(list => setRunningModels(list ?? [])).catch(() => {})
     }
     load()
   }, [conv?.id])
@@ -161,6 +173,8 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
 
     api.ollama.onStreamEnd(async err => {
       setStreaming(false)
+      // Refresh running model list so the GPU/CPU badge stays current
+      api.ollama.getRunningModels().then(list => setRunningModels(list ?? [])).catch(() => {})
       if (err) {
         setError(`Stream error: ${err}`)
         setLiveSegments([])
@@ -171,9 +185,18 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
         const msgs = await api.db.getMessages(conv.id)
         const userCount = msgs.filter(m => m.role === 'user').length
         if (userCount === 1 && conv.title === 'New Chat') {
+          // Set truncated title immediately, then upgrade async with model-generated one
           const firstUser = msgs.find(m => m.role === 'user')
-          const title = (firstUser?.content || '').slice(0, 50) + ((firstUser?.content || '').length > 50 ? '…' : '')
-          await api.db.renameConversation(conv.id, title)
+          const truncated = (firstUser?.content || '').slice(0, 50) + ((firstUser?.content || '').length > 50 ? '…' : '')
+          await api.db.renameConversation(conv.id, truncated)
+          api.ollama.generateTitle(selectedModel, serializeForOllama(msgs))
+            .then(async aiTitle => {
+              if (aiTitle) {
+                await api.db.renameConversation(conv.id, aiTitle)
+                await onConvUpdate()
+              }
+            })
+            .catch(() => {})
         }
         setMessages(msgs)
       }
@@ -214,6 +237,17 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       onConsumePendingInput()
     }
   }, [pendingInput])
+
+  async function saveConvParams(updates) {
+    const next = { ...convParams, ...updates }
+    setConvParams(next)
+    if (conv) {
+      await api.db.setConversationParams(conv.id, {
+        temperature: next.temperature,
+        numCtx: next.numCtx,
+      })
+    }
+  }
 
   async function send(text) {
     const baseContent = (text || input).trim()
@@ -449,30 +483,61 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       <div className="shrink-0 px-6 pb-6" style={{ background: 'linear-gradient(to top, #0f0f16 80%, transparent)' }}>
         <div className="max-w-[860px] mx-auto">
           {/* Stream stats / live timer + context bar */}
-          {(streaming || streamStats) && (
-            <div className="mb-1 space-y-1">
-              <div className="flex items-center justify-end h-5">
-                <span className="text-[11px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
-                  {streamStats
-                    ? `${Math.round(streamStats.durationMs / 1000)}s · ${streamStats.completionTokens.toLocaleString()} tokens`
-                    : `${elapsed}s`
-                  }
-                </span>
-              </div>
-              {streamStats?.numCtx && (() => {
-                const used = streamStats.promptTokens + streamStats.completionTokens
-                const pct = Math.min(used / streamStats.numCtx, 1)
-                const warn = pct >= 0.9
-                const caution = pct >= 0.75
-                const barColor = warn
-                  ? 'rgb(239,68,68)'
-                  : caution
-                    ? 'rgb(234,179,8)'
-                    : 'rgba(var(--accent-rgb),0.6)'
-                return (
+          {(streaming || streamStats) && (() => {
+            // GPU/CPU badge — check if selected model is in the running list with VRAM
+            const runningEntry = runningModels.find(r => r.name === selectedModel || r.model === selectedModel)
+            const usingGpu = runningEntry && (runningEntry.size_vram > 0)
+            const usingCpu = runningEntry && runningEntry.size_vram === 0
+
+            // Context fill
+            const used = streamStats ? streamStats.promptTokens + streamStats.completionTokens : 0
+            const numCtxVal = streamStats?.numCtx
+            const pct = numCtxVal ? Math.min(used / numCtxVal, 1) : 0
+            const warn = pct >= 0.9
+            const caution = pct >= 0.75
+            const barColor = warn ? 'rgb(239,68,68)' : caution ? 'rgb(234,179,8)' : 'rgba(var(--accent-rgb),0.6)'
+
+            // Turns remaining estimate (average tokens per turn from history)
+            let turnsLeft = null
+            if (streamStats?.numCtx && messages.length >= 2) {
+              const avgTurnTokens = used / Math.max(messages.filter(m => m.role === 'user').length, 1)
+              const remaining = streamStats.numCtx - used
+              turnsLeft = avgTurnTokens > 0 ? Math.floor(remaining / avgTurnTokens) : null
+            }
+
+            return (
+              <div className="mb-1 space-y-1">
+                <div className="flex items-center justify-between h-5">
+                  <div className="flex items-center gap-2">
+                    {usingGpu && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                        style={{ background: 'rgba(80,200,120,0.12)', color: 'rgb(140,220,160)', border: '1px solid rgba(80,200,120,0.2)' }}>
+                        GPU
+                      </span>
+                    )}
+                    {usingCpu && (
+                      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded"
+                        style={{ background: 'rgba(234,179,8,0.1)', color: 'rgb(200,160,80)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                        CPU
+                      </span>
+                    )}
+                    {streamStats?.numCtx && turnsLeft !== null && (
+                      <span className="text-[10px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                        ~{turnsLeft} turn{turnsLeft !== 1 ? 's' : ''} left
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-[11px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                    {streamStats
+                      ? `${Math.round(streamStats.durationMs / 1000)}s · ${streamStats.completionTokens.toLocaleString()} tokens`
+                      : `${elapsed}s`
+                    }
+                  </span>
+                </div>
+                {numCtxVal && (
                   <div
                     className="flex items-center gap-2"
-                    title={`Context: ${used.toLocaleString()} / ${streamStats.numCtx.toLocaleString()} tokens (${Math.round(pct * 100)}%)`}
+                    title={`Context: ${used.toLocaleString()} / ${numCtxVal.toLocaleString()} tokens (${Math.round(pct * 100)}%)`}
                   >
                     <div className="flex-1 h-[2px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
                       <div
@@ -486,10 +551,10 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                       </span>
                     )}
                   </div>
-                )
-              })()}
-            </div>
-          )}
+                )}
+              </div>
+            )
+          })()}
           {/* Attached file pills */}
           {attachedFiles.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
@@ -578,10 +643,88 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                     No tools
                   </span>
                 )}
+                {/* Conversation params (gear) */}
+                <div className="relative">
+                  <button
+                    onClick={() => { setParamsOpen(v => !v); setModelMenuOpen(false) }}
+                    className={`p-1.5 rounded-lg transition-colors ${paramsOpen || convParams.temperature !== null || convParams.numCtx !== null
+                      ? 'text-primary bg-primary/10'
+                      : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'}`}
+                    title="Conversation parameters"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">tune</span>
+                  </button>
+                  {paramsOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setParamsOpen(false)} />
+                      <div
+                        className="absolute bottom-full right-0 mb-2 z-20 rounded-2xl shadow-2xl p-4 w-72"
+                        style={{ background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)' }}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <span className="text-label-sm font-semibold text-on-surface">Conversation parameters</span>
+                          {(convParams.temperature !== null || convParams.numCtx !== null) && (
+                            <button
+                              onClick={() => saveConvParams({ temperature: null, numCtx: null })}
+                              className="text-[10px] text-on-surface-variant hover:text-primary transition-colors"
+                            >
+                              Reset
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Temperature */}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[12px] text-on-surface-variant">Temperature</label>
+                            <span className="text-[12px] tabular-nums font-mono text-on-surface">
+                              {convParams.temperature !== null ? convParams.temperature.toFixed(1) : '0.7'}
+                              {convParams.temperature === null && <span className="text-on-surface-variant text-[10px] ml-1">(default)</span>}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="0" max="2" step="0.1"
+                            value={convParams.temperature ?? 0.7}
+                            onChange={e => saveConvParams({ temperature: parseFloat(e.target.value) })}
+                            className="w-full accent-primary"
+                          />
+                          <div className="flex justify-between text-[10px] text-on-surface-variant/50 mt-0.5">
+                            <span>Precise</span>
+                            <span>Creative</span>
+                          </div>
+                        </div>
+
+                        {/* Context window */}
+                        <div>
+                          <div className="flex items-center justify-between mb-1.5">
+                            <label className="text-[12px] text-on-surface-variant">Context window</label>
+                            <span className="text-[12px] tabular-nums font-mono text-on-surface">
+                              {convParams.numCtx !== null ? (convParams.numCtx / 1024).toFixed(0) + 'k' : 'default'}
+                              {convParams.numCtx === null && <span className="text-on-surface-variant text-[10px] ml-1">(8k)</span>}
+                            </span>
+                          </div>
+                          <input
+                            type="range"
+                            min="2048" max="131072" step="2048"
+                            value={convParams.numCtx ?? 8192}
+                            onChange={e => saveConvParams({ numCtx: parseInt(e.target.value) })}
+                            className="w-full accent-primary"
+                          />
+                          <div className="flex justify-between text-[10px] text-on-surface-variant/50 mt-0.5">
+                            <span>2k</span>
+                            <span>128k</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
+
                 {/* Model picker */}
                 <div className="relative">
                   <button
-                    onClick={() => setModelMenuOpen(v => !v)}
+                    onClick={() => { setModelMenuOpen(v => !v); setParamsOpen(false) }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-label-sm text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high border border-outline-variant transition-colors"
                   >
                     <span className="material-symbols-outlined text-[14px]">deployed_code</span>

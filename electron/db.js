@@ -97,6 +97,20 @@ async function init() {
       created_at TEXT DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_telemetry_date ON telemetry(created_at);
+    CREATE TABLE IF NOT EXISTS mcp_servers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      command TEXT NOT NULL,
+      args_json TEXT NOT NULL DEFAULT '[]',
+      env_json TEXT NOT NULL DEFAULT '{}',
+      enabled INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT DEFAULT (datetime('now'))
+    );
+    CREATE TABLE IF NOT EXISTS mcp_server_projects (
+      mcp_server_id INTEGER NOT NULL,
+      project_id INTEGER NOT NULL,
+      PRIMARY KEY (mcp_server_id, project_id)
+    );
   `)
 
   // Migrations for existing DBs (safe — fails silently if column already exists)
@@ -106,6 +120,8 @@ async function init() {
   try { db.run('ALTER TABLE projects ADD COLUMN directory_path TEXT') } catch {}
   try { db.run('ALTER TABLE conversations ADD COLUMN skill_id INTEGER') } catch {}
   try { db.run('ALTER TABLE projects ADD COLUMN num_ctx INTEGER') } catch {}
+  try { db.run('ALTER TABLE conversations ADD COLUMN temperature REAL') } catch {}
+  try { db.run('ALTER TABLE conversations ADD COLUMN num_ctx INTEGER') } catch {}
 
   // Tool-call migration: expand role CHECK and add tool_calls/tool_call_id columns.
   // SQLite doesn't support altering CHECK in place, so rebuild the table if needed.
@@ -342,6 +358,13 @@ function unpinConversation(id) {
   run('UPDATE conversations SET pinned = 0 WHERE id = ?', [id])
 }
 
+function setConversationParams(id, { temperature, numCtx }) {
+  run(
+    'UPDATE conversations SET temperature = ?, num_ctx = ? WHERE id = ?',
+    [temperature ?? null, numCtx ?? null, id]
+  )
+}
+
 // ── Messages ──────────────────────────────────────────────────────────────────
 
 function getMessages(convId) {
@@ -479,6 +502,55 @@ function setSetting(key, value) {
 
 // ── Memory ────────────────────────────────────────────────────────────────────
 
+// ── MCP Servers ───────────────────────────────────────────────────────────────
+
+function listMcpServers() {
+  return all('SELECT * FROM mcp_servers ORDER BY name')
+}
+
+function getMcpServer(id) {
+  return get('SELECT * FROM mcp_servers WHERE id = ?', [id])
+}
+
+function createMcpServer(name, command, argsJson = '[]', envJson = '{}') {
+  return insert(
+    'INSERT INTO mcp_servers (name, command, args_json, env_json) VALUES (?, ?, ?, ?)',
+    [name, command, argsJson, envJson]
+  )
+}
+
+function updateMcpServer(id, name, command, argsJson, envJson) {
+  run('UPDATE mcp_servers SET name = ?, command = ?, args_json = ?, env_json = ? WHERE id = ?',
+    [name, command, argsJson, envJson, id])
+}
+
+function deleteMcpServer(id) {
+  run('DELETE FROM mcp_servers WHERE id = ?', [id])
+}
+
+function setMcpServerEnabled(id, enabled) {
+  run('UPDATE mcp_servers SET enabled = ? WHERE id = ?', [enabled ? 1 : 0, id])
+  return getMcpServer(id)
+}
+
+function getProjectMcpServers(projectId) {
+  return all(`
+    SELECT s.* FROM mcp_servers s
+    INNER JOIN mcp_server_projects p ON s.id = p.mcp_server_id
+    WHERE p.project_id = ?
+  `, [projectId])
+}
+
+function addProjectMcpServer(projectId, serverId) {
+  try {
+    run('INSERT OR IGNORE INTO mcp_server_projects (mcp_server_id, project_id) VALUES (?, ?)', [serverId, projectId])
+  } catch {}
+}
+
+function removeProjectMcpServer(projectId, serverId) {
+  run('DELETE FROM mcp_server_projects WHERE mcp_server_id = ? AND project_id = ?', [serverId, projectId])
+}
+
 function loadMemory() {
   try { return fs.readFileSync(MEMORY_PATH, 'utf8').trim() } catch { return '' }
 }
@@ -488,6 +560,7 @@ function saveMemory(content) {
 }
 
 module.exports = {
+  setConversationParams,
   init,
   logTelemetry, getTelemetrySummary,
   listProjects, createProject, renameProject, deleteProject,
@@ -501,4 +574,6 @@ module.exports = {
   listSkills, getSkill, createSkill, updateSkill, deleteSkill,
   getSetting, setSetting,
   loadMemory, saveMemory,
+  listMcpServers, getMcpServer, createMcpServer, updateMcpServer, deleteMcpServer, setMcpServerEnabled,
+  getProjectMcpServers, addProjectMcpServer, removeProjectMcpServer,
 }

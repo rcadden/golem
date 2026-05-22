@@ -6,6 +6,7 @@ const { execFile, spawn } = require('child_process')
 const fs = require('fs')
 const db = require('./db')
 const tools = require('./tools/registry')
+const mcpManager = require('./mcp/client')
 const { autoUpdater } = require('electron-updater')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
@@ -85,6 +86,11 @@ app.whenReady().then(async () => {
   await db.init()
   createWindow()
   setupAutoUpdater()
+  // Connect all enabled MCP servers in the background — don't block startup.
+  const servers = db.listMcpServers()
+  if (servers.length > 0) {
+    mcpManager.connectAll(servers).catch(() => {})
+  }
 })
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
@@ -96,8 +102,9 @@ ipcMain.handle('db:getConversation',    (_, id)                   => db.getConve
 ipcMain.handle('db:createConversation', (_, title, model, sigilId, projectId, skillId) => db.createConversation(title, model, sigilId, projectId, skillId))
 ipcMain.handle('db:renameConversation', (_, id, title)            => db.renameConversation(id, title))
 ipcMain.handle('db:deleteConversation', (_, id)                   => db.deleteConversation(id))
-ipcMain.handle('db:pinConversation',    (_, id)                   => db.pinConversation(id))
-ipcMain.handle('db:unpinConversation',  (_, id)                   => db.unpinConversation(id))
+ipcMain.handle('db:pinConversation',         (_, id)                    => db.pinConversation(id))
+ipcMain.handle('db:unpinConversation',       (_, id)                    => db.unpinConversation(id))
+ipcMain.handle('db:setConversationParams',   (_, id, params)            => db.setConversationParams(id, params))
 ipcMain.handle('db:getMessages',        (_, convId)               => db.getMessages(convId))
 ipcMain.handle('db:addMessage',         (_, convId, role, content) => db.addMessage(convId, role, content))
 ipcMain.handle('db:updateMessage',      (_, id, content)          => db.updateMessage(id, content))
@@ -403,14 +410,14 @@ const MAX_TOOL_ITERATIONS = 4
 
 // One round-trip to Ollama. Streams content chunks via 'ollama:chunk' and resolves
 // with { content, toolCalls, promptTokens, completionTokens, ttftMs }.
-function streamOnce({ event, model, messages, toolSchemas, controller, streamStart, ttftRef, numCtx = 16384 }) {
+function streamOnce({ event, model, messages, toolSchemas, controller, streamStart, ttftRef, numCtx = 16384, temperature = 0.7 }) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model,
       messages,
       stream: true,
       ...(toolSchemas?.length ? { tools: toolSchemas } : {}),
-      options: { temperature: 0.7, num_ctx: numCtx },
+      options: { temperature, num_ctx: numCtx },
     })
 
     let accumulatedContent = ''
@@ -474,7 +481,9 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
   activeStreamController = controller
 
   const project = payload.projectId ? db.getProject(payload.projectId) : null
-  const numCtx = project?.num_ctx ?? parseInt(db.getSetting('num_ctx', '8192'))
+  const conversation = payload.conversationId ? db.getConversation(payload.conversationId) : null
+  const numCtx = conversation?.num_ctx ?? project?.num_ctx ?? parseInt(db.getSetting('num_ctx', '8192'))
+  const temperature = conversation?.temperature ?? 0.7
   const projectDir = project?.directory_path ?? null
   const memory = db.loadMemory()
   let basePrompt = "You are a helpful assistant running locally on the user's machine via Ollama.\nRespond directly and concisely."
@@ -514,6 +523,24 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
   // Tool capability — auto-detected per model
   const toolsEnabled = await getToolCapability(payload.model)
   const activeSkill = payload.skillId ? db.getSkill(payload.skillId) : null
+
+  // MCP tools — filter to project associations when applicable (Phase 3)
+  let mcpTools = null
+  if (toolsEnabled) {
+    if (payload.projectId) {
+      const projectServers = db.getProjectMcpServers(payload.projectId)
+      if (projectServers.length > 0) {
+        const allowed = new Set(projectServers.map(s => s.id))
+        mcpTools = mcpManager.getTools(allowed)
+      } else {
+        // No specific associations → expose all connected servers
+        mcpTools = mcpManager.getTools()
+      }
+    } else {
+      mcpTools = mcpManager.getTools()
+    }
+  }
+
   const ctx = {
     conversationId: payload.conversationId ?? null,
     projectId: payload.projectId ?? null,
@@ -522,6 +549,8 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
     skillId: payload.skillId ?? null,
     skillCategory: activeSkill?.category ?? null,
     db,
+    mcpTools,
+    mcpManager,
   }
   const toolSchemas = toolsEnabled ? tools.listSchemas(ctx) : []
 
@@ -538,7 +567,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       const result = await streamOnce({
         event, model: payload.model, messages,
         toolSchemas, controller, streamStart, ttftRef,
-        numCtx,
+        numCtx, temperature,
       })
 
       if (result.aborted) {
@@ -644,8 +673,144 @@ ipcMain.on('ollama:stopStream', () => {
   if (activeStreamController) activeStreamController.abort = true
 })
 
+// ── Auto-title ────────────────────────────────────────────────────────────────
+// Fire-and-forget from renderer after first exchange. Returns a short title
+// or null if the model fails / times out.
+ipcMain.handle('ollama:generateTitle', async (_, { model, messages }) => {
+  try {
+    const result = await ollamaPost('/api/chat', {
+      model,
+      stream: false,
+      options: { temperature: 0.3, num_predict: 20 },
+      messages: [
+        ...messages,
+        {
+          role: 'user',
+          content: 'Summarize this conversation as a title of 4–6 words. Return only the title — no quotes, no punctuation at the end, no commentary.',
+        },
+      ],
+    }, { timeout: 15000 })
+    const title = result?.message?.content?.trim()
+    return title && title.length > 0 && title.length < 80 ? title : null
+  } catch {
+    return null
+  }
+})
+
+// ── System info ───────────────────────────────────────────────────────────────
+const os = require('os')
+
+ipcMain.handle('system:getHardwareInfo', async () => {
+  const cpus = os.cpus()
+  const totalMem = os.totalmem()
+  const freeMem  = os.freemem()
+
+  // GPU detection — Windows only via wmic
+  let gpus = []
+  try {
+    const raw = await new Promise((resolve, reject) => {
+      execFile('wmic', [
+        'path', 'win32_VideoController',
+        'get', 'Name,AdapterRAM',
+        '/format:csv',
+      ], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+        if (err) reject(err)
+        else resolve(stdout)
+      })
+    })
+    // wmic CSV: Node,AdapterRAM,Name
+    gpus = raw.split('\n')
+      .slice(1)
+      .map(line => line.trim().split(','))
+      .filter(parts => parts.length >= 3 && parts[2])
+      .map(parts => ({
+        name:      parts[2].trim(),
+        vramBytes: parseInt(parts[1]) || 0,
+      }))
+      .filter(g => g.name && g.name !== 'Name')
+  } catch {}
+
+  return {
+    cpu:     { model: cpus[0]?.model ?? 'Unknown', cores: cpus.length, speedMhz: cpus[0]?.speed ?? 0 },
+    ram:     { totalBytes: totalMem, freeBytes: freeMem },
+    gpus,
+  }
+})
+
+ipcMain.handle('ollama:getRunningModels', async () => {
+  try {
+    const data = await ollamaGet('/api/ps')
+    return data?.models ?? []
+  } catch { return [] }
+})
+
+ipcMain.handle('ollama:getModelInfo', async (_, modelName) => {
+  try {
+    return await ollamaPost('/api/show', { name: modelName }, { timeout: 8000 })
+  } catch { return null }
+})
+
 ipcMain.handle('app:getLoginItemEnabled', () => app.getLoginItemSettings().openAtLogin)
 ipcMain.handle('app:setLoginItem', (_, enable) => app.setLoginItemSettings({ openAtLogin: enable, openAsHidden: false }))
+
+// ── MCP ───────────────────────────────────────────────────────────────────────
+
+ipcMain.handle('mcp:listServers', () => db.listMcpServers())
+
+ipcMain.handle('mcp:addServer', async (_, { name, command, argsJson, envJson }) => {
+  const id = db.createMcpServer(name.trim(), command.trim(), argsJson || '[]', envJson || '{}')
+  const server = db.getMcpServer(id)
+  let connectResult = { ok: false, error: 'Not attempted' }
+  try {
+    const toolList = await mcpManager.connect(server)
+    connectResult = { ok: true, toolCount: toolList.length }
+  } catch (err) {
+    connectResult = { ok: false, error: err.message }
+  }
+  return { id, ...connectResult }
+})
+
+ipcMain.handle('mcp:updateServer', async (_, id, { name, command, argsJson, envJson }) => {
+  db.updateMcpServer(id, name.trim(), command.trim(), argsJson || '[]', envJson || '{}')
+  const server = db.getMcpServer(id)
+  if (server?.enabled) {
+    try { await mcpManager.connect(server) } catch {}
+  }
+})
+
+ipcMain.handle('mcp:removeServer', async (_, id) => {
+  await mcpManager.disconnect(id)
+  db.deleteMcpServer(id)
+})
+
+ipcMain.handle('mcp:setEnabled', async (_, id, enabled) => {
+  const server = db.setMcpServerEnabled(id, enabled)
+  if (enabled) {
+    try { await mcpManager.connect(server) } catch {}
+  } else {
+    await mcpManager.disconnect(id)
+  }
+  return server
+})
+
+ipcMain.handle('mcp:reconnect', async (_, id) => {
+  const server = db.getMcpServer(id)
+  if (!server) return { ok: false, error: 'Server not found' }
+  try {
+    const toolList = await mcpManager.connect(server)
+    return { ok: true, toolCount: toolList.length }
+  } catch (err) {
+    return { ok: false, error: err.message }
+  }
+})
+
+ipcMain.handle('mcp:getStatus',  () => mcpManager.getStatus())
+ipcMain.handle('mcp:getErrors',  () => mcpManager.getErrors())
+
+// Phase 3 — per-project MCP associations
+ipcMain.handle('mcp:getProjectServers',    (_, projectId)           => db.getProjectMcpServers(projectId))
+ipcMain.handle('mcp:addProjectServer',    (_, projectId, serverId)  => { db.addProjectMcpServer(projectId, serverId) })
+ipcMain.handle('mcp:removeProjectServer', (_, projectId, serverId)  => { db.removeProjectMcpServer(projectId, serverId) })
 
 ipcMain.on('window:setSize',  (_, w, h) => { if (mainWindow) mainWindow.setSize(w, h) })
 ipcMain.on('window:minimize', ()        => mainWindow?.minimize())
