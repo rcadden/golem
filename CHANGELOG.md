@@ -4,6 +4,16 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.6.1] — 2026-05-22
+
+### Fixed
+- Personal Memory no longer resets to blank when the Settings view mounts before
+  the async load resolves. A guard ref now blocks the save from firing until the
+  disk read has completed, and load errors surface in the console instead of being
+  silently swallowed.
+
+---
+
 ## [0.6.0] — 2026-05-22
 
 ### Added

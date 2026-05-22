@@ -155,36 +155,46 @@ export default function SettingsView({
   const [mcpWizard, setMcpWizard] = useState(BLANK_WIZARD)
   const [mcpFormOpen, setMcpFormOpen] = useState(false)
   const [mcpConnecting, setMcpConnecting] = useState(null)
+  const memoryLoaded = useRef(false)
 
   useEffect(() => {
     async function load() {
-      const [dm, url, mem, loginEnabled, accent, savedNumCtx] = await Promise.all([
-        api.db.getSetting('default_model', models[0] || ''),
-        api.db.getSetting('ollama_url', 'http://localhost:11434'),
-        api.memory.load(),
-        api.application.getLoginItemEnabled(),
-        api.db.getSetting('accent_color', '#6366f1'),
-        api.db.getSetting('num_ctx', '16384'),
-      ])
-      setDefaultModel(dm)
-      setOllamaUrl(url)
-      setMemory(mem)
-      setLaunchAtStartup(loginEnabled)
-      setAccentColor(accent)
-      setNumCtxState(parseInt(savedNumCtx) || 16384)
+      try {
+        const [dm, url, mem, loginEnabled, accent, savedNumCtx] = await Promise.all([
+          api.db.getSetting('default_model', models[0] || ''),
+          api.db.getSetting('ollama_url', 'http://localhost:11434'),
+          api.memory.load(),
+          api.application.getLoginItemEnabled(),
+          api.db.getSetting('accent_color', '#6366f1'),
+          api.db.getSetting('num_ctx', '16384'),
+        ])
+        setDefaultModel(dm)
+        setOllamaUrl(url)
+        setMemory(mem)
+        memoryLoaded.current = true
+        setLaunchAtStartup(loginEnabled)
+        setAccentColor(accent)
+        setNumCtxState(parseInt(savedNumCtx) || 16384)
+      } catch (err) {
+        console.error('[Settings] load failed:', err)
+      }
 
       // Hardware
       api.system.getHardwareInfo().then(info => setHwInfo(info)).catch(() => {})
 
       // MCP
-      const [servers, status, errors] = await Promise.all([
-        api.mcp.listServers(),
-        api.mcp.getStatus(),
-        api.mcp.getErrors(),
-      ])
-      setMcpServers(servers)
-      setMcpStatus(status)
-      setMcpErrors(errors)
+      try {
+        const [servers, status, errors] = await Promise.all([
+          api.mcp.listServers(),
+          api.mcp.getStatus(),
+          api.mcp.getErrors(),
+        ])
+        setMcpServers(servers)
+        setMcpStatus(status)
+        setMcpErrors(errors)
+      } catch (err) {
+        console.error('[Settings] MCP load failed:', err)
+      }
     }
     load()
   }, [])
@@ -241,10 +251,10 @@ export default function SettingsView({
     await Promise.all([
       api.db.setSetting('default_model', defaultModel),
       api.db.setSetting('ollama_url', ollamaUrl),
-      api.memory.save(memory),
+      memoryLoaded.current && api.memory.save(memory),
       api.application.setLoginItem(launchAtStartup),
       api.db.setSetting('accent_color', accentColor),
-    ])
+    ].filter(Boolean))
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
@@ -1005,7 +1015,7 @@ export default function SettingsView({
               </div>
               <div>
                 <div className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Golem</div>
-                <div className="text-body-md text-on-surface-variant text-sm">Version 0.6.0</div>
+                <div className="text-body-md text-on-surface-variant text-sm">Version 0.6.1</div>
               </div>
             </div>
           </div>
