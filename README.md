@@ -87,7 +87,19 @@ The starter pack of sigils and skills bundled with Golem (`electron/seeds/starte
 
 These are adapted for use with local models (model-agnostic, no Claude-specific references) and are not direct copies of Anthropic's text. Credit and thanks to the Anthropic team for the original prompt designs.
 
-The **Sigil Architect** and **Skill Architect** skills, and the **Code Reviewer**, **Debug Assistant**, **Commit Message Writer**, **Brainstorming Partner**, and **Email Drafter** skills are original to Golem, influenced by the author's use of [Claude Code](https://claude.ai/code).
+The following skills are adapted from the **[Claude Code](https://claude.ai/code)** superpowers skill system, translated from agentic coding workflows into conversational frameworks:
+
+| Golem Skill | Inspired by |
+|---|---|
+| Debug Assistant | `superpowers:systematic-debugging` |
+| Project Planner | `superpowers:writing-plans` |
+| TDD Coach | `superpowers:test-driven-development` |
+| Code Review Responder | `superpowers:receiving-code-review` |
+| Pre-PR Checklist | `superpowers:verification-before-completion` + `superpowers:requesting-code-review` |
+| Branch Completion | `superpowers:finishing-a-development-branch` |
+| Brainstorming Partner | `superpowers:brainstorming` |
+
+The **Sigil Architect**, **Skill Architect**, **Code Reviewer**, **Commit Message Writer**, and **Email Drafter** skills are original to Golem.
 
 ## License
 
