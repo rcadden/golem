@@ -4,9 +4,6 @@ A fast, private, local-first AI chat desktop application powered by [Ollama](htt
 
 ---
 
-> [!IMPORTANT]
-> **Stack Migration Note:** Golem has been rewritten from Python + Flet to an **Electron 33 + React 19** architecture. The legacy Python code is deprecated.
-
 ## Core Features
 
 - 💬 **Local Chat Streaming** — Real-time offline streaming from your local Ollama models.

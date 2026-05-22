@@ -6,7 +6,10 @@ node_modules/
 dist/
 dist-electron/
 
-# Python (legacy)
+# Python (not used — legacy guard)
+*.py
+*.bat
+requirements.txt
 __pycache__/
 *.pyc
 *.pyo
@@ -15,6 +18,12 @@ __pycache__/
 venv/
 *.egg-info/
 build/
+
+# AI assistant configs (local only)
+GEMINI.md
+
+# Internal planning artifacts
+docs/plans/
 
 # Environment
 .env
