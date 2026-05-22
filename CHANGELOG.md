@@ -4,6 +4,47 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.6.0] — 2026-05-22
+
+### Added
+- **MCP client** — connect any stdio-based Model Context Protocol server; tools
+  discovered at connect time and injected alongside built-ins. Settings wizard
+  with one-click templates (Filesystem, GitHub, Brave Search, SQLite, Puppeteer)
+  and a smart command-string parser for custom servers. Per-project server
+  association via sidebar toggles.
+- **Hardware & model intelligence** — Settings Hardware panel shows CPU, RAM,
+  GPU name + VRAM, and a per-model traffic light (Fits well / Tight fit / May
+  be slow). ChatView session health row shows GPU/CPU mode badge, estimated
+  turns remaining, and context fill percentage.
+- **Model parameters per conversation** — temperature and context window sliders
+  per conversation (tune icon in input bar). Settings persist; priority chain:
+  conversation → project → global default.
+- **Auto-title** — model generates a 4–6 word title after the first exchange,
+  upgrading the immediate truncated fallback in the background.
+- **Offline font bundling** — Inter, Hanken Grotesk, JetBrains Mono, and
+  Material Symbols are now bundled via npm. No internet required at runtime.
+- **Auto-update** — app checks for new GitHub releases on launch and every
+  4 hours; update chip appears in title bar with one-click install.
+- **Sigil & Skill Architects** — built-in skills that design and save sigils/
+  skills directly via tool calling. "Test this sigil" and "Launch skill" action
+  buttons appear inline after saving.
+- **Starter pack** — 5 sigils and 18 skills seeded on first launch, drawing
+  from Anthropic's prompt library and Claude Code superpowers (attributed in
+  README).
+- **Message editing** — click any sent user message to edit it; downstream
+  messages are cleared and the response regenerates from the edit point.
+- **Context window indicator** — token usage bar above the input, with amber
+  warning at ≥75% and red at ≥90% fill.
+
+### Changed
+- Models management consolidated into Settings view (ModelsView removed).
+- App always opens to a new session on launch rather than restoring the last
+  conversation.
+- Built-in Golem-category skill prompts always updated on launch (not skipped
+  if already present).
+
+---
+
 ## [0.5.0] — 2026-05-20
 
 ### Added
