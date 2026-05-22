@@ -32,14 +32,22 @@ _Features that pay off once the core is solid._
 
 ---
 
-## Sprint 3 — Advanced
-_Nice to have; revisit after Sprint 2._
+## Sprint 3 — Intelligence & Ecosystem
+_Golem becomes aware of itself and opens to the world._
 
-- [ ] **Model parameters per conversation** — temperature, context window size sliders in conversation settings
-- [ ] **Artifacts panel** — side-by-side panel for generated code/documents (like Claude's artifacts)
-- [ ] **Conversation branching** — fork from any message to explore a different direction
-- [ ] **Auto-title improvement** — use the model to generate a better title (async, after first response)
-- [ ] **Offline font bundling** — bundle Inter, Hanken Grotesk, JetBrains Mono, Material Symbols locally (currently CDN; breaks without internet)
+- [ ] **MCP client support** — connect external MCP servers (stdio); tools discovered at connect time and injected alongside built-ins; per-project server association; MCP management in Settings · RICE: 8·4·0.7·5 = 4.5
+  - Phase 1: `electron/mcp/client.js` — spawn/connect/discover/execute; `mcp_servers` DB table; wire into tool registry
+  - Phase 2: Settings UI — add/remove/enable servers, status indicators, tool list preview
+  - Phase 3: Per-project MCP association (junction table)
+- [ ] **Hardware & model intelligence** — surface what the device can actually do · RICE: 7·3·0.8·3 = 5.6
+  - Hardware panel in Settings: RAM, CPU, GPU name + VRAM, per-model traffic-light (🟢 VRAM / 🟡 split / 🔴 CPU-only)
+  - Session health row above input: context bar always-visible %, estimated turns remaining, GPU/CPU mode badge per session
+  - Input token counter: live chars→tokens estimate next to send button; warns at 85% context
+- [ ] **Auto-title improvement** — use the model to generate a better title (async, after first response) · RICE: 6·2·0.8·2 = 4.8
+- [ ] **Model parameters per conversation** — temperature, context window size sliders in conversation settings · RICE: 4·2·0.7·3 = 1.9
+- [ ] **Offline font bundling** — bundle Inter, Hanken Grotesk, JetBrains Mono, Material Symbols locally (currently CDN; breaks without internet) · RICE: 3·2·0.9·1 = 5.4
+- [ ] **Artifacts panel** — side-by-side panel for generated code/documents (like Claude's artifacts) · RICE: 5·3·0.5·5 = 1.5
+- [ ] **Conversation branching** — fork from any message to explore a different direction · RICE: 4·2·0.5·4 = 1.0
 
 ---
 
@@ -49,7 +57,9 @@ _No commitment; parking lot for ideas._
 - Voice input (push-to-talk, Whisper-backed)
 - Multi-modal image attachments (when supported by local model)
 - Ollama model marketplace browser within the app
-- MCP server connections (local tool use)
+- Full-text message search (currently title-only)
+- Zen mode — collapse sidebar for full-canvas focus
+- Draft persistence — restore unsent input when switching conversations
 - Encrypted conversation storage
 - Windows tray icon + global hotkey to open
 
