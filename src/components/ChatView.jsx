@@ -215,7 +215,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       api.ollama.offToolCallStart()
       api.ollama.offToolCallResult()
       api.ollama.offStreamStats()
-      api.ollama.offLoopStatus(setLoopStatus)
+      api.ollama.offLoopStatus()
     }
   }, [conv?.id])
 

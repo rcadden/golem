@@ -78,7 +78,7 @@ contextBridge.exposeInMainWorld('golem', {
     onStreamStats:   (cb)      => ipcRenderer.on('ollama:streamStats', (_, data) => cb(data)),
     offStreamStats:  ()        => ipcRenderer.removeAllListeners('ollama:streamStats'),
     onLoopStatus:    (cb)      => ipcRenderer.on('ollama:loopStatus', (_, data) => cb(data)),
-    offLoopStatus:   (cb)      => ipcRenderer.removeListener('ollama:loopStatus', cb),
+    offLoopStatus:   ()        => ipcRenderer.removeAllListeners('ollama:loopStatus'),
     testToolCapability: (model) => ipcRenderer.invoke('ollama:testToolCapability', model),
     getToolCapability:  (model) => ipcRenderer.invoke('ollama:getToolCapability', model),
     generateTitle:      (model, messages) => ipcRenderer.invoke('ollama:generateTitle', { model, messages }),
