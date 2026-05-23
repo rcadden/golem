@@ -500,6 +500,20 @@ function setSetting(key, value) {
   run("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [key, value])
 }
 
+// ── Drafts ────────────────────────────────────────────────────────────────────
+
+function getDraft(convId) {
+  return get('SELECT value FROM settings WHERE key = ?', [`draft_${convId}`])?.value ?? ''
+}
+
+function saveDraft(convId, text) {
+  if (!text || !text.trim()) {
+    run('DELETE FROM settings WHERE key = ?', [`draft_${convId}`])
+  } else {
+    run('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)', [`draft_${convId}`, text])
+  }
+}
+
 // ── Memory ────────────────────────────────────────────────────────────────────
 
 // ── MCP Servers ───────────────────────────────────────────────────────────────
@@ -573,6 +587,7 @@ module.exports = {
   listSigils, getSigil, createSigil, updateSigil, deleteSigil,
   listSkills, getSkill, createSkill, updateSkill, deleteSkill,
   getSetting, setSetting,
+  getDraft, saveDraft,
   loadMemory, saveMemory,
   listMcpServers, getMcpServer, createMcpServer, updateMcpServer, deleteMcpServer, setMcpServerEnabled,
   getProjectMcpServers, addProjectMcpServer, removeProjectMcpServer,

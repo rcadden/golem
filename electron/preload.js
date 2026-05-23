@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('golem', {
     deleteMessage:             (id)                           => ipcRenderer.invoke('db:deleteMessage', id),
     getSetting:                (key, fallback)                => ipcRenderer.invoke('db:getSetting', key, fallback),
     setSetting:                (key, value)                   => ipcRenderer.invoke('db:setSetting', key, value),
+    getDraft:                  (convId)                       => ipcRenderer.invoke('db:getDraft', convId),
+    saveDraft:                 (convId, text)                 => ipcRenderer.invoke('db:saveDraft', convId, text),
 
     listSigils:    ()                      => ipcRenderer.invoke('db:listSigils'),
     createSigil:   (name, content)         => ipcRenderer.invoke('db:createSigil', name, content),

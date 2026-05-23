@@ -232,6 +232,14 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   }, [messages])
 
   useEffect(() => {
+    setInput('')
+    if (!conv) return
+    api.db.getDraft(conv.id).then(draft => {
+      if (draft) setInput(draft)
+    })
+  }, [conv?.id])
+
+  useEffect(() => {
     if (pendingInput) {
       setInput(pendingInput)
       onConsumePendingInput()
@@ -263,6 +271,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     }
 
     setInput('')
+    if (conv) api.db.saveDraft(conv.id, '')
     setAttachedFiles([])
     setError('')
 
@@ -590,7 +599,10 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={e => setInput(e.target.value)}
+              onChange={e => {
+                setInput(e.target.value)
+                if (conv) api.db.saveDraft(conv.id, e.target.value)
+              }}
               onKeyDown={handleKeyDown}
               placeholder={conv?.project_id ? 'Message Golem…' : 'Message Golem… — open a project with a directory set for file & git tools'}
               rows={1}

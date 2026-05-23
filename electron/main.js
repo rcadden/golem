@@ -111,6 +111,8 @@ ipcMain.handle('db:updateMessage',      (_, id, content)          => db.updateMe
 ipcMain.handle('db:deleteMessage',      (_, id)                   => db.deleteMessage(id))
 ipcMain.handle('db:getSetting',         (_, key, fb)              => db.getSetting(key, fb))
 ipcMain.handle('db:setSetting',         (_, key, val)             => db.setSetting(key, val))
+ipcMain.handle('db:getDraft',           (_, convId)               => db.getDraft(convId))
+ipcMain.handle('db:saveDraft',          (_, convId, text)         => db.saveDraft(convId, text))
 
 ipcMain.handle('db:listSigils',   ()                       => db.listSigils())
 ipcMain.handle('db:createSigil',  (_, name, content)       => db.createSigil(name, content))
