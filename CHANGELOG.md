@@ -4,6 +4,25 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.7.0] — 2026-05-23
+
+### Added
+- **Full-text message search** — sidebar search now matches message content (≥3 chars); results show an "in messages" badge when the match is in message body rather than title
+- **Zen mode** — collapse/expand the sidebar from the title bar toggle or Ctrl+B
+- **Keyboard shortcuts** — Ctrl+N new chat, Ctrl+B toggle sidebar, Ctrl+/ focus search, Escape cancel stream
+- **Draft persistence** — unsent input is saved per conversation and restored on return; 300ms debounced writes
+- **MCP crash resilience** — transport error/close detection with exponential-backoff auto-reconnect (1s/2s/4s, max 3 attempts)
+- **Tool-loop status bar** — amber warning bar in chat when the 4-iteration tool-loop cap is hit
+- **Cross-platform builds** — macOS DMG (x64 + arm64) and Linux AppImage (x64) targets; `build:mac` and `build:linux` scripts added
+
+### Fixed
+- Replaced hardcoded Windows Ollama path with cross-platform `path.join()` fallback
+- Removed IPC listener leak in `offLoopStatus` — now uses `removeAllListeners`
+- Search result click now correctly switches to chat view
+- Draft load cancellation guard prevents stale IPC responses overwriting current conversation input
+
+---
+
 ## [0.6.1] — 2026-05-22
 
 ### Fixed

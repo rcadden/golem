@@ -1,6 +1,6 @@
 {
   "name": "golem",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "description": "Local Ollama chat desktop app",
   "author": "Antigravity Projects",
   "main": "electron/main.js",
