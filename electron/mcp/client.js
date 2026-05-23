@@ -15,6 +15,8 @@ class MCPManager {
     this._connections = new Map()
     // serverId → last error string (for status reporting)
     this._errors = new Map()
+    // serverId → server config (needed for reconnect)
+    this._serverConfigs = new Map()
   }
 
   // ── Connect ──────────────────────────────────────────────────────────────────
@@ -23,6 +25,7 @@ class MCPManager {
     // Tear down any existing connection first
     await this.disconnect(server.id)
     this._errors.delete(server.id)
+    this._serverConfigs.set(server.id, server)
 
     let args = []
     let env  = {}
@@ -51,6 +54,20 @@ class MCPManager {
       serverId: server.id,
     })
 
+    transport.onerror = (err) => {
+      if (!this._connections.has(server.id)) return
+      this._connections.delete(server.id)
+      this._errors.set(server.id, `Crashed: ${err?.message || String(err)}`)
+      this._scheduleReconnect(server.id, 0)
+    }
+
+    transport.onclose = () => {
+      if (!this._connections.has(server.id)) return
+      this._connections.delete(server.id)
+      this._errors.set(server.id, 'Server disconnected unexpectedly')
+      this._scheduleReconnect(server.id, 0)
+    }
+
     return tools
   }
 
@@ -61,6 +78,26 @@ class MCPManager {
     if (!conn) return
     try { await conn.client.close() } catch {}
     this._connections.delete(serverId)
+  }
+
+  // ── Reconnect ─────────────────────────────────────────────────────────────────
+
+  _scheduleReconnect(serverId, attempt) {
+    const MAX_ATTEMPTS = 3
+    if (attempt >= MAX_ATTEMPTS) return
+
+    const delay = Math.pow(2, attempt) * 1000  // 1000ms, 2000ms, 4000ms
+    setTimeout(async () => {
+      const server = this._serverConfigs.get(serverId)
+      if (!server || !server.enabled) return
+      try {
+        await this.connect(server)
+        this._errors.delete(serverId)
+      } catch (err) {
+        this._errors.set(serverId, err.message || String(err))
+        this._scheduleReconnect(serverId, attempt + 1)
+      }
+    }, delay)
   }
 
   // ── Connect all enabled servers ───────────────────────────────────────────────
