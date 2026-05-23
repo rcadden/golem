@@ -51,6 +51,15 @@ npm run pack      # Unpacked dir only — fast sanity check, no installer
 ```
 Use `/build` to step through a guided release: version bump, build, commit, tag.
 
+**Release order (always follow this sequence):**
+1. Finish feature work on a branch/worktree
+2. Merge the branch into `main` (via PR or local merge) — **never run `/build` on a feature branch**
+3. Run `/build` on `main` after the merge is confirmed
+4. `/build` handles: version bump in `package.json` AND `src/components/SettingsView.jsx`, CHANGELOG entry, `npm run build`, commit + annotated tag, push, GitHub release with installer + blockmap + `latest.yml`
+5. Verify all three release assets are present: `gh api repos/rcadden/golem/releases/tags/vX.Y.Z --jq '.assets[].name'`
+
+**Asset naming:** electron-builder writes `latest.yml` with dash-separated names (`Golem-Setup-X.Y.Z.exe`), but GitHub normalizes uploaded names to dots. Update `dist-electron/latest.yml` to use `Golem.Setup.X.Y.Z.exe` before uploading, and use `#targetName` in `gh release upload` to control the final asset name.
+
 ## Active Integrations
 - **Ollama** — local, no API key. Must be running before Golem launches (auto-start via `ensureRunning()`)
 
