@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { applyAccentColor } from './utils/accent'
 import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
@@ -135,6 +135,30 @@ export default function App() {
     setActiveConvId(id)
     setView('chat')
   }
+
+  const handleNewChatRef = useRef(handleNewChat)
+  handleNewChatRef.current = handleNewChat
+
+  useEffect(() => {
+    function onKeyDown(e) {
+      const inTextField = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
+      if (e.ctrlKey && e.key === 'n') {
+        if (inTextField) return
+        e.preventDefault()
+        handleNewChatRef.current()
+      }
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault()
+        setSidebarOpen(s => !s)
+      }
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault()
+        document.querySelector('[data-search-input]')?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   async function handleNewChatWithSigil(sigilId) {
     const model = await getDefaultModel()

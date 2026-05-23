@@ -308,6 +308,7 @@ export default function Sidebar({
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px]"
               style={{ color: 'rgba(196,192,216,0.35)' }}>search</span>
             <input
+              data-search-input
               ref={searchRef}
               value={search}
               onChange={e => setSearch(e.target.value)}

@@ -229,6 +229,16 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   }, [streaming])
 
   useEffect(() => {
+    function onKeyDown(e) {
+      if (e.key === 'Escape' && streaming) {
+        api.ollama.stopStream()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [streaming])
+
+  useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'instant' })
   }, [messages])
 
