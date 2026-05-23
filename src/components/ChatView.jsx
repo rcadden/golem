@@ -105,6 +105,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
   const elapsedIntervalRef = useRef(null)
+  const saveDraftTimerRef = useRef(null)
 
   useEffect(() => {
     if (!selectedModel) { setToolCap(null); return }
@@ -234,9 +235,11 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   useEffect(() => {
     setInput('')
     if (!conv) return
+    let cancelled = false
     api.db.getDraft(conv.id).then(draft => {
-      if (draft) setInput(draft)
+      if (!cancelled && draft) setInput(draft)
     })
+    return () => { cancelled = true }
   }, [conv?.id])
 
   useEffect(() => {
@@ -600,8 +603,14 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
               ref={textareaRef}
               value={input}
               onChange={e => {
-                setInput(e.target.value)
-                if (conv) api.db.saveDraft(conv.id, e.target.value)
+                const val = e.target.value
+                setInput(val)
+                if (conv) {
+                  clearTimeout(saveDraftTimerRef.current)
+                  saveDraftTimerRef.current = setTimeout(() => {
+                    api.db.saveDraft(conv.id, val)
+                  }, 300)
+                }
               }}
               onKeyDown={handleKeyDown}
               placeholder={conv?.project_id ? 'Message Golem…' : 'Message Golem… — open a project with a directory set for file & git tools'}
