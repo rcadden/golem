@@ -60,7 +60,11 @@ export default function Sidebar({
       setMsgSearchResults([])
       return
     }
-    api.db.searchMessages(search.trim()).then(setMsgSearchResults)
+    let cancelled = false
+    api.db.searchMessages(search.trim()).then(results => {
+      if (!cancelled) setMsgSearchResults(results)
+    })
+    return () => { cancelled = true }
   }, [search])
 
   // ── Conversation menu ─────────────────────────────────────────────────────────
@@ -372,7 +376,7 @@ export default function Sidebar({
                   return (
                     <div
                       key={c.id}
-                      onClick={() => onSelectConv(c.id)}
+                      onClick={() => { onSelectConv(c.id); onSetView('chat') }}
                       className="flex items-center justify-between gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5"
                     >
                       <span className="text-[13px] truncate" style={{ color: 'rgba(196,192,216,0.75)' }}>
