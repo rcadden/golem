@@ -87,6 +87,7 @@ contextBridge.exposeInMainWorld('golem', {
   },
   system: {
     getHardwareInfo: () => ipcRenderer.invoke('system:getHardwareInfo'),
+    platform:        () => ipcRenderer.invoke('system:platform'),
   },
   mcp: {
     listServers:         ()                              => ipcRenderer.invoke('mcp:listServers'),

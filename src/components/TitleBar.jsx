@@ -14,12 +14,14 @@ export default function TitleBar({
   const [isMaximized, setIsMaximized] = useState(false)
   const [updateAvailable, setUpdateAvailable] = useState(null)   // { version } | null
   const [updateReady, setUpdateReady]     = useState(false)
+  const [platform, setPlatform] = useState('win32')
 
   useEffect(() => {
     api.window.isMaximized().then(setIsMaximized)
     api.window.onMaximizeChange(setIsMaximized)
     api.updater.onAvailable(info => setUpdateAvailable(info))
     api.updater.onDownloaded(() => setUpdateReady(true))
+    api.system.platform().then(setPlatform)
     return () => {
       api.window.offMaximizeChange()
       api.updater.offAvailable()
@@ -109,25 +111,27 @@ export default function TitleBar({
         )}
       </div>
 
-      {/* Right: Windows controls */}
-      <div className="no-drag flex h-full">
-        {[
-          { icon: 'remove',     action: () => api.window.minimize(), hover: 'rgba(255,255,255,0.06)' },
-          { icon: isMaximized ? 'filter_none' : 'crop_square', action: () => api.window.maximize(), hover: 'rgba(255,255,255,0.06)' },
-          { icon: 'close',      action: () => api.window.close(),    hover: 'rgba(239,68,68,0.8)' },
-        ].map(({ icon, action, hover }) => (
-          <button
-            key={icon}
-            onClick={action}
-            className="w-11 h-full flex items-center justify-center transition-colors duration-150"
-            style={{ color: 'rgba(196,192,216,0.3)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = hover; e.currentTarget.style.color = icon === 'close' ? '#fff' : 'rgba(196,192,216,0.8)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.3)' }}
-          >
-            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{icon}</span>
-          </button>
-        ))}
-      </div>
+      {/* Right: Windows controls (hidden on macOS — native traffic lights used instead) */}
+      {platform !== 'darwin' && (
+        <div className="no-drag flex h-full">
+          {[
+            { icon: 'remove',     action: () => api.window.minimize(), hover: 'rgba(255,255,255,0.06)' },
+            { icon: isMaximized ? 'filter_none' : 'crop_square', action: () => api.window.maximize(), hover: 'rgba(255,255,255,0.06)' },
+            { icon: 'close',      action: () => api.window.close(),    hover: 'rgba(239,68,68,0.8)' },
+          ].map(({ icon, action, hover }) => (
+            <button
+              key={icon}
+              onClick={action}
+              className="w-11 h-full flex items-center justify-center transition-colors duration-150"
+              style={{ color: 'rgba(196,192,216,0.3)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = hover; e.currentTarget.style.color = icon === 'close' ? '#fff' : 'rgba(196,192,216,0.8)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.3)' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>{icon}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

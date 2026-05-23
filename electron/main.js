@@ -20,14 +20,16 @@ function createWindow() {
   const w = parseInt(db.getSetting('window_width',  '1200'))
   const h = parseInt(db.getSetting('window_height', '800'))
 
+  const isMac = process.platform === 'darwin'
+
   mainWindow = new BrowserWindow({
     width: w,
     height: h,
     minWidth: 800,
     minHeight: 600,
     backgroundColor: '#121212',
-    titleBarStyle: 'hiddenInset',
-    frame: false,
+    titleBarStyle: isMac ? 'hiddenInset' : 'default',
+    frame: isMac ? true : false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -704,6 +706,8 @@ ipcMain.handle('ollama:generateTitle', async (_, { model, messages }) => {
 
 // ── System info ───────────────────────────────────────────────────────────────
 const os = require('os')
+
+ipcMain.handle('system:platform', () => process.platform)
 
 ipcMain.handle('system:getHardwareInfo', async () => {
   const cpus = os.cpus()
