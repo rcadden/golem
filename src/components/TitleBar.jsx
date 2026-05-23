@@ -2,7 +2,15 @@ import { useState, useEffect } from 'react'
 
 const api = window.golem
 
-export default function TitleBar({ title = '', pulling = false, pullModel = '', pullProgress = null, pullStatus = '' }) {
+export default function TitleBar({
+  title = '',
+  pulling = false,
+  pullModel = '',
+  pullProgress = null,
+  pullStatus = '',
+  sidebarOpen = true,
+  onToggleSidebar,
+}) {
   const [isMaximized, setIsMaximized] = useState(false)
   const [updateAvailable, setUpdateAvailable] = useState(null)   // { version } | null
   const [updateReady, setUpdateReady]     = useState(false)
@@ -24,10 +32,24 @@ export default function TitleBar({ title = '', pulling = false, pullModel = '', 
       className="drag flex items-center justify-between h-8 shrink-0 select-none"
       style={{ background: '#111118', borderBottom: '1px solid rgba(255,255,255,0.04)' }}
     >
-      {/* Left: conversation title */}
-      <div className="no-drag px-4 text-[11px] font-medium tracking-wide truncate max-w-[60%]"
-        style={{ color: 'rgba(196,192,216,0.35)' }}>
-        {title}
+      {/* Left: sidebar toggle + conversation title */}
+      <div className="no-drag flex items-center gap-0.5 pl-1 min-w-0">
+        <button
+          onClick={onToggleSidebar}
+          className="w-7 h-7 flex-shrink-0 flex items-center justify-center rounded transition-colors duration-150 hover:bg-white/8"
+          style={{ color: 'rgba(196,192,216,0.35)' }}
+          onMouseEnter={e => { e.currentTarget.style.color = 'rgba(196,192,216,0.75)' }}
+          onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,192,216,0.35)' }}
+          title={sidebarOpen ? 'Hide sidebar (Ctrl+B)' : 'Show sidebar (Ctrl+B)'}
+        >
+          <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>
+            {sidebarOpen ? 'left_panel_close' : 'left_panel_open'}
+          </span>
+        </button>
+        <span className="px-2 text-[11px] font-medium tracking-wide truncate max-w-[55%]"
+          style={{ color: 'rgba(196,192,216,0.35)' }}>
+          {title}
+        </span>
       </div>
 
       {/* Center: status chips */}

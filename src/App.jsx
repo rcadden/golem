@@ -24,6 +24,7 @@ export default function App() {
   const [pullModel, setPullModel] = useState('')
   const [pullStatus, setPullStatus] = useState('')
   const [pullProgress, setPullProgress] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     api.ollama.onPullProgress(data => {
@@ -238,31 +239,35 @@ export default function App() {
         pullModel={pullModel}
         pullProgress={pullProgress}
         pullStatus={pullStatus}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen(s => !s)}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          conversations={conversations}
-          activeConvId={activeConvId}
-          activeView={view}
-          sigils={sigils}
-          skills={skills}
-          projects={projects}
-          onNewChat={handleNewChat}
-          onNewChatWithSigil={handleNewChatWithSigil}
-          onNewChatWithSkill={handleNewChatWithSkill}
-          onNewChatInProject={handleNewChatInProject}
-          onSelectConv={handleSelectConv}
-          onDeleteConv={handleDeleteConv}
-          onRenameConv={handleRenameConv}
-          onPinConv={handlePinConv}
-          onUnpinConv={handleUnpinConv}
-          onExportConv={handleExportConv}
-          onSetView={setView}
-          onSigilsChange={refreshSigils}
-          onSkillsChange={refreshSkills}
-          onProjectsChange={refreshProjects}
-        />
+        {sidebarOpen && (
+          <Sidebar
+            conversations={conversations}
+            activeConvId={activeConvId}
+            activeView={view}
+            sigils={sigils}
+            skills={skills}
+            projects={projects}
+            onNewChat={handleNewChat}
+            onNewChatWithSigil={handleNewChatWithSigil}
+            onNewChatWithSkill={handleNewChatWithSkill}
+            onNewChatInProject={handleNewChatInProject}
+            onSelectConv={handleSelectConv}
+            onDeleteConv={handleDeleteConv}
+            onRenameConv={handleRenameConv}
+            onPinConv={handlePinConv}
+            onUnpinConv={handleUnpinConv}
+            onExportConv={handleExportConv}
+            onSetView={setView}
+            onSigilsChange={refreshSigils}
+            onSkillsChange={refreshSkills}
+            onProjectsChange={refreshProjects}
+          />
+        )}
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {view === 'chat' && (
