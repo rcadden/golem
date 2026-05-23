@@ -350,7 +350,7 @@ async function isOllamaReady() {
 function findOllamaExe() {
   const candidates = [
     process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'Ollama', 'ollama.exe'),
-    'C:\\Program Files\\Ollama\\ollama.exe',
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, 'Ollama', 'ollama.exe'),
   ].filter(Boolean)
   for (const p of candidates) {
     if (fs.existsSync(p)) return p
