@@ -42,3 +42,6 @@ Thumbs.db
 .claude/
 *.log
 run_check.bat
+
+# Git worktrees
+.worktrees/

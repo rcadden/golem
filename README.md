@@ -20,10 +20,12 @@ A fast, private, local-first AI chat desktop application powered by [Ollama](htt
 
 ## System Requirements
 
-- **OS:** Windows 10 or Windows 11 (x64)
+- **OS:** Windows 10 or Windows 11 (x64) · macOS 12+ · Linux (x64)
 - **Node.js:** v18.0.0 or higher
 - **Ollama:** Installed and running locally (`ollama serve`)
 - **Models:** At least one model pulled (e.g. `ollama pull qwen2.5-coder:7b`)
+
+> **Note:** macOS (DMG) and Linux (AppImage) builds are available but have not been tested on real hardware by the developer. Windows is the primary supported platform. Reports of macOS/Linux issues are welcome.
 
 ## Setup
 

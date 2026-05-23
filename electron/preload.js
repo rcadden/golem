@@ -16,6 +16,8 @@ contextBridge.exposeInMainWorld('golem', {
     deleteMessage:             (id)                           => ipcRenderer.invoke('db:deleteMessage', id),
     getSetting:                (key, fallback)                => ipcRenderer.invoke('db:getSetting', key, fallback),
     setSetting:                (key, value)                   => ipcRenderer.invoke('db:setSetting', key, value),
+    getDraft:                  (convId)                       => ipcRenderer.invoke('db:getDraft', convId),
+    saveDraft:                 (convId, text)                 => ipcRenderer.invoke('db:saveDraft', convId, text),
 
     listSigils:    ()                      => ipcRenderer.invoke('db:listSigils'),
     createSigil:   (name, content)         => ipcRenderer.invoke('db:createSigil', name, content),
@@ -41,6 +43,7 @@ contextBridge.exposeInMainWorld('golem', {
     listProjectFiles:         (projectId)  => ipcRenderer.invoke('db:listProjectFiles', projectId),
     addProjectFile:           (projectId, name, content) => ipcRenderer.invoke('db:addProjectFile', projectId, name, content),
     removeProjectFile:        (id)         => ipcRenderer.invoke('db:removeProjectFile', id),
+    searchMessages:           (query)      => ipcRenderer.invoke('db:searchMessages', query),
   },
   memory: {
     load: ()        => ipcRenderer.invoke('memory:load'),
@@ -74,6 +77,8 @@ contextBridge.exposeInMainWorld('golem', {
     offToolCallResult: ()      => ipcRenderer.removeAllListeners('ollama:tool_call_result'),
     onStreamStats:   (cb)      => ipcRenderer.on('ollama:streamStats', (_, data) => cb(data)),
     offStreamStats:  ()        => ipcRenderer.removeAllListeners('ollama:streamStats'),
+    onLoopStatus:    (cb)      => ipcRenderer.on('ollama:loopStatus', (_, data) => cb(data)),
+    offLoopStatus:   ()        => ipcRenderer.removeAllListeners('ollama:loopStatus'),
     testToolCapability: (model) => ipcRenderer.invoke('ollama:testToolCapability', model),
     getToolCapability:  (model) => ipcRenderer.invoke('ollama:getToolCapability', model),
     generateTitle:      (model, messages) => ipcRenderer.invoke('ollama:generateTitle', { model, messages }),
@@ -82,6 +87,7 @@ contextBridge.exposeInMainWorld('golem', {
   },
   system: {
     getHardwareInfo: () => ipcRenderer.invoke('system:getHardwareInfo'),
+    platform:        () => ipcRenderer.invoke('system:platform'),
   },
   mcp: {
     listServers:         ()                              => ipcRenderer.invoke('mcp:listServers'),

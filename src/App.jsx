@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { applyAccentColor } from './utils/accent'
 import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
@@ -24,6 +24,7 @@ export default function App() {
   const [pullModel, setPullModel] = useState('')
   const [pullStatus, setPullStatus] = useState('')
   const [pullProgress, setPullProgress] = useState(null)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
 
   useEffect(() => {
     api.ollama.onPullProgress(data => {
@@ -135,6 +136,30 @@ export default function App() {
     setView('chat')
   }
 
+  const handleNewChatRef = useRef(handleNewChat)
+  handleNewChatRef.current = handleNewChat
+
+  useEffect(() => {
+    function onKeyDown(e) {
+      const inTextField = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA'
+      if (e.ctrlKey && e.key === 'n') {
+        if (inTextField) return
+        e.preventDefault()
+        handleNewChatRef.current()
+      }
+      if (e.ctrlKey && e.key === 'b') {
+        e.preventDefault()
+        setSidebarOpen(s => !s)
+      }
+      if (e.ctrlKey && e.key === '/') {
+        e.preventDefault()
+        document.querySelector('[data-search-input]')?.focus()
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
+
   async function handleNewChatWithSigil(sigilId) {
     const model = await getDefaultModel()
     if (!model) return
@@ -238,31 +263,35 @@ export default function App() {
         pullModel={pullModel}
         pullProgress={pullProgress}
         pullStatus={pullStatus}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen(s => !s)}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <Sidebar
-          conversations={conversations}
-          activeConvId={activeConvId}
-          activeView={view}
-          sigils={sigils}
-          skills={skills}
-          projects={projects}
-          onNewChat={handleNewChat}
-          onNewChatWithSigil={handleNewChatWithSigil}
-          onNewChatWithSkill={handleNewChatWithSkill}
-          onNewChatInProject={handleNewChatInProject}
-          onSelectConv={handleSelectConv}
-          onDeleteConv={handleDeleteConv}
-          onRenameConv={handleRenameConv}
-          onPinConv={handlePinConv}
-          onUnpinConv={handleUnpinConv}
-          onExportConv={handleExportConv}
-          onSetView={setView}
-          onSigilsChange={refreshSigils}
-          onSkillsChange={refreshSkills}
-          onProjectsChange={refreshProjects}
-        />
+        {sidebarOpen && (
+          <Sidebar
+            conversations={conversations}
+            activeConvId={activeConvId}
+            activeView={view}
+            sigils={sigils}
+            skills={skills}
+            projects={projects}
+            onNewChat={handleNewChat}
+            onNewChatWithSigil={handleNewChatWithSigil}
+            onNewChatWithSkill={handleNewChatWithSkill}
+            onNewChatInProject={handleNewChatInProject}
+            onSelectConv={handleSelectConv}
+            onDeleteConv={handleDeleteConv}
+            onRenameConv={handleRenameConv}
+            onPinConv={handlePinConv}
+            onUnpinConv={handleUnpinConv}
+            onExportConv={handleExportConv}
+            onSetView={setView}
+            onSigilsChange={refreshSigils}
+            onSkillsChange={refreshSkills}
+            onProjectsChange={refreshProjects}
+          />
+        )}
 
         <main className="flex-1 flex flex-col overflow-hidden">
           {view === 'chat' && (

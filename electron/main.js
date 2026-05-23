@@ -20,14 +20,16 @@ function createWindow() {
   const w = parseInt(db.getSetting('window_width',  '1200'))
   const h = parseInt(db.getSetting('window_height', '800'))
 
+  const isMac = process.platform === 'darwin'
+
   mainWindow = new BrowserWindow({
     width: w,
     height: h,
     minWidth: 800,
     minHeight: 600,
     backgroundColor: '#121212',
-    titleBarStyle: 'hiddenInset',
-    frame: false,
+    titleBarStyle: isMac ? 'hiddenInset' : 'default',
+    frame: isMac ? true : false,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -111,6 +113,8 @@ ipcMain.handle('db:updateMessage',      (_, id, content)          => db.updateMe
 ipcMain.handle('db:deleteMessage',      (_, id)                   => db.deleteMessage(id))
 ipcMain.handle('db:getSetting',         (_, key, fb)              => db.getSetting(key, fb))
 ipcMain.handle('db:setSetting',         (_, key, val)             => db.setSetting(key, val))
+ipcMain.handle('db:getDraft',           (_, convId)               => db.getDraft(convId))
+ipcMain.handle('db:saveDraft',          (_, convId, text)         => db.saveDraft(convId, text))
 
 ipcMain.handle('db:listSigils',   ()                       => db.listSigils())
 ipcMain.handle('db:createSigil',  (_, name, content)       => db.createSigil(name, content))
@@ -133,6 +137,8 @@ ipcMain.handle('db:listProjectConversations', (_, projectId)             => db.l
 ipcMain.handle('db:listProjectFiles',         (_, projectId)             => db.listProjectFiles(projectId))
 ipcMain.handle('db:addProjectFile',           (_, projectId, name, content) => db.addProjectFile(projectId, name, content))
 ipcMain.handle('db:removeProjectFile',        (_, id)                    => db.removeProjectFile(id))
+
+ipcMain.handle('db:searchMessages', (_, query) => db.searchMessages(query))
 
 ipcMain.handle('memory:load',     ()                   => db.loadMemory())
 ipcMain.handle('memory:save',     (_, content)         => db.saveMemory(content))
@@ -344,7 +350,7 @@ async function isOllamaReady() {
 function findOllamaExe() {
   const candidates = [
     process.env.LOCALAPPDATA && path.join(process.env.LOCALAPPDATA, 'Programs', 'Ollama', 'ollama.exe'),
-    'C:\\Program Files\\Ollama\\ollama.exe',
+    process.env.ProgramFiles && path.join(process.env.ProgramFiles, 'Ollama', 'ollama.exe'),
   ].filter(Boolean)
   for (const p of candidates) {
     if (fs.existsSync(p)) return p
@@ -637,6 +643,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       if (iter === MAX_TOOL_ITERATIONS - 1) {
         const capMsg = '_[Tool-call iteration cap reached. Stopping to avoid runaway loops.]_'
         event.sender.send('ollama:chunk', capMsg)
+        event.sender.send('ollama:loopStatus', { reason: 'cap_reached', iterations: MAX_TOOL_ITERATIONS })
         if (payload.conversationId) {
           db.addMessage(payload.conversationId, 'assistant', capMsg)
         }
@@ -699,6 +706,8 @@ ipcMain.handle('ollama:generateTitle', async (_, { model, messages }) => {
 
 // ── System info ───────────────────────────────────────────────────────────────
 const os = require('os')
+
+ipcMain.handle('system:platform', () => process.platform)
 
 ipcMain.handle('system:getHardwareInfo', async () => {
   const cpus = os.cpus()
