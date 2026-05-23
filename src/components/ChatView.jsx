@@ -99,6 +99,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   const [toolCap, setToolCap] = useState(null)
   const [streamStats, setStreamStats] = useState(null)   // { promptTokens, completionTokens, durationMs, ttftMs } — set on streamEnd
   const [elapsed, setElapsed] = useState(0)              // seconds since stream started, for live timer
+  const [loopStatus, setLoopStatus] = useState(null)     // { reason, iterations } — set when tool-loop cap is hit
   const [error, setError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState([])
   const [runningModels, setRunningModels] = useState([]) // [{ name, size_vram }] from /api/ps
@@ -172,6 +173,8 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       setStreamStats(data)
     })
 
+    api.ollama.onLoopStatus(setLoopStatus)
+
     api.ollama.onStreamEnd(async err => {
       setStreaming(false)
       // Refresh running model list so the GPU/CPU badge stays current
@@ -212,6 +215,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       api.ollama.offToolCallStart()
       api.ollama.offToolCallResult()
       api.ollama.offStreamStats()
+      api.ollama.offLoopStatus(setLoopStatus)
     }
   }, [conv?.id])
 
@@ -294,6 +298,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
 
     setStreaming(true)
     setLiveSegments([])
+    setLoopStatus(null)
 
     const payload = {
       model: selectedModel,
@@ -318,6 +323,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     setError('')
     setStreaming(true)
     setLiveSegments([])
+    setLoopStatus(null)
     await api.ollama.startStream({
       model: selectedModel,
       messages: serializeForOllama(remaining),
@@ -343,6 +349,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     setError('')
     setStreaming(true)
     setLiveSegments([])
+    setLoopStatus(null)
     const payload = {
       model: selectedModel,
       messages: serializeForOllama(remaining),
@@ -493,6 +500,19 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
           ))}
           {streaming && liveSegments.length === 0 && (
             <MessageBubble role="assistant" isThinking />
+          )}
+          {loopStatus?.reason === 'cap_reached' && (
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] my-2"
+              style={{
+                background: 'rgba(234,179,8,0.08)',
+                border: '1px solid rgba(234,179,8,0.2)',
+                color: 'rgb(200,160,60)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>warning</span>
+              Tool loop stopped after {loopStatus.iterations} iterations to prevent runaway chains
+            </div>
           )}
           {error && (
             <div className="text-error text-body-md text-center py-2">{error}</div>

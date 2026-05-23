@@ -641,6 +641,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       if (iter === MAX_TOOL_ITERATIONS - 1) {
         const capMsg = '_[Tool-call iteration cap reached. Stopping to avoid runaway loops.]_'
         event.sender.send('ollama:chunk', capMsg)
+        event.sender.send('ollama:loopStatus', { reason: 'cap_reached', iterations: MAX_TOOL_ITERATIONS })
         if (payload.conversationId) {
           db.addMessage(payload.conversationId, 'assistant', capMsg)
         }
