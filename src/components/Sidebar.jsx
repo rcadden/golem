@@ -31,6 +31,7 @@ export default function Sidebar({
   const [projectMcpMap, setProjectMcpMap] = useState({})
   const [sigilModal, setSigilModal] = useState(null)
   const [search, setSearch] = useState('')
+  const [msgSearchResults, setMsgSearchResults] = useState([])
   const renameRef = useRef(null)
   const renameProjectRef = useRef(null)
   const searchRef = useRef(null)
@@ -53,6 +54,14 @@ export default function Sidebar({
       } catch {}
     })
   }, [expandedProjects, mcpServers.length])
+
+  useEffect(() => {
+    if (search.trim().length < 3) {
+      setMsgSearchResults([])
+      return
+    }
+    api.db.searchMessages(search.trim()).then(setMsgSearchResults)
+  }, [search])
 
   // ── Conversation menu ─────────────────────────────────────────────────────────
 
@@ -340,21 +349,50 @@ export default function Sidebar({
               ...conversations,
               ...projects.flatMap(p => p.conversations || [])
             ]
-            const results = allConvs.filter(c => c.title.toLowerCase().includes(q))
+
+            const titleMatches = allConvs.filter(c => c.title.toLowerCase().includes(q))
+            const titleMatchIds = new Set(titleMatches.map(c => c.id))
+            const contentOnlyMatches = msgSearchResults.filter(r => !titleMatchIds.has(r.id))
+            const allResults = [...titleMatches, ...contentOnlyMatches]
+
             return (
-              <div>
-                <div className="px-2 mb-1.5">
-                  <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">
-                    {results.length} result{results.length !== 1 ? 's' : ''}
-                  </span>
+              <div className="px-2 pt-1 pb-3">
+                <div className="text-[10px] uppercase tracking-widest mb-2 px-1"
+                  style={{ color: 'rgba(196,192,216,0.3)' }}>
+                  {allResults.length} result{allResults.length !== 1 ? 's' : ''}
+                  {search.trim().length >= 3 && ' (title + content)'}
                 </div>
-                {results.length === 0 ? (
-                  <div className="px-2 py-3 text-[13px] text-on-surface-variant/40 text-center">No matches</div>
-                ) : (
-                  <div className="flex flex-col gap-px">
-                    {results.map(conv => <ConvRow key={conv.id} conv={conv} />)}
+                {allResults.length === 0 && (
+                  <div className="text-[12px] px-1" style={{ color: 'rgba(196,192,216,0.3)' }}>
+                    No matches
                   </div>
                 )}
+                {allResults.map(c => {
+                  const isContentMatch = !titleMatchIds.has(c.id)
+                  return (
+                    <div
+                      key={c.id}
+                      onClick={() => onSelectConv(c.id)}
+                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5"
+                    >
+                      <span className="text-[13px] truncate" style={{ color: 'rgba(196,192,216,0.75)' }}>
+                        {c.title || 'Untitled'}
+                      </span>
+                      {isContentMatch && (
+                        <span
+                          className="flex-shrink-0 text-[9px] px-1.5 py-0.5 rounded"
+                          style={{
+                            background: 'rgba(var(--accent-rgb),0.1)',
+                            color: 'var(--accent-light)',
+                            border: '1px solid rgba(var(--accent-rgb),0.2)',
+                          }}
+                        >
+                          in messages
+                        </span>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )
           })()}

@@ -573,6 +573,21 @@ function saveMemory(content) {
   fs.writeFileSync(MEMORY_PATH, content, 'utf8')
 }
 
+// ── Search ────────────────────────────────────────────────────────────────────
+
+function searchMessages(query) {
+  if (!query || query.trim().length < 3) return []
+  return all(
+    `SELECT DISTINCT c.id, c.title, c.project_id, c.pinned
+     FROM conversations c
+     JOIN messages m ON m.conversation_id = c.id
+     WHERE m.content LIKE ? AND m.role IN ('user', 'assistant')
+     ORDER BY c.updated_at DESC
+     LIMIT 20`,
+    [`%${query.trim()}%`]
+  )
+}
+
 module.exports = {
   setConversationParams,
   init,
@@ -591,4 +606,5 @@ module.exports = {
   loadMemory, saveMemory,
   listMcpServers, getMcpServer, createMcpServer, updateMcpServer, deleteMcpServer, setMcpServerEnabled,
   getProjectMcpServers, addProjectMcpServer, removeProjectMcpServer,
+  searchMessages,
 }

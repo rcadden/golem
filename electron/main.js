@@ -136,6 +136,8 @@ ipcMain.handle('db:listProjectFiles',         (_, projectId)             => db.l
 ipcMain.handle('db:addProjectFile',           (_, projectId, name, content) => db.addProjectFile(projectId, name, content))
 ipcMain.handle('db:removeProjectFile',        (_, id)                    => db.removeProjectFile(id))
 
+ipcMain.handle('db:searchMessages', (_, query) => db.searchMessages(query))
+
 ipcMain.handle('memory:load',     ()                   => db.loadMemory())
 ipcMain.handle('memory:save',     (_, content)         => db.saveMemory(content))
 

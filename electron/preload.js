@@ -43,6 +43,7 @@ contextBridge.exposeInMainWorld('golem', {
     listProjectFiles:         (projectId)  => ipcRenderer.invoke('db:listProjectFiles', projectId),
     addProjectFile:           (projectId, name, content) => ipcRenderer.invoke('db:addProjectFile', projectId, name, content),
     removeProjectFile:        (id)         => ipcRenderer.invoke('db:removeProjectFile', id),
+    searchMessages:           (query)      => ipcRenderer.invoke('db:searchMessages', query),
   },
   memory: {
     load: ()        => ipcRenderer.invoke('memory:load'),
