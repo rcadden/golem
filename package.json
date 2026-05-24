@@ -45,7 +45,7 @@
   "build": {
     "appId": "com.antigravity.golem",
     "productName": "Golem",
-    "copyright": "Copyright © 2025 Antigravity Projects",
+    "copyright": "Copyright © 2025 Applied Flux, LLC",
     "icon": "public/icon.png",
     "asar": true,
     "asarUnpack": [
@@ -116,7 +116,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Golem",
-      "publisherName": "Antigravity Projects"
+      "publisherName": "Applied Flux, LLC"
     },
     "nativeRebuilder": "sequential",
     "publish": {
