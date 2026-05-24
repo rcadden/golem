@@ -65,7 +65,17 @@ _Harden what exists. Expand who can run it._
 
 ---
 
-## Sprint 5 — Providers
+## Sprint 5 — Onboarding & Discovery (v0.8.0)
+_Make Golem approachable for someone who's never run a local model._
+
+- [ ] **Ollama install flow** — detect if Ollama is missing at launch; show a first-run screen with a one-click install button; download platform installer, run it, poll until Ollama responds, then continue normally · RICE: 8·4·0.8·3 = 8.5
+- [ ] **Model library view** — new Library view (bottom nav); curated list of ~60-80 models with metadata (description, use case tags, context length, VRAM per quant); hardware-aware tier badges (Runs great / Might be OK / Not a chance) based on detected GPU VRAM; filter by tier, use case, parameter size; sort by name/size/compatibility; pull from the library card · RICE: 7·4·0.8·5 = 4.5
+- [ ] **Installed models tab** — consolidate the existing model pull/delete UI from Settings into the Library view under an "Installed" tab; Settings retains only the default model selector
+- [ ] **Auto-update on launch only** — remove the 4-hour polling interval; check once on launch _(code already written)_ · RICE: trivial
+
+---
+
+## Sprint 6 — Providers
 _Extend the provider surface without diluting the local-first identity._
 
 > Design constraint: Ollama remains default and first-class. Cloud providers are opt-in, hidden in Advanced Settings. The README's "no cloud" promise becomes: *"Ollama by default. Cloud providers available as opt-in with your own API keys — no Golem accounts or subscriptions required."*
@@ -87,11 +97,17 @@ _No commitment. Parking lot for evaluated ideas._
 | `SECURITY.md` | Vulnerability reporting policy — add if/when the project grows a contributor base |
 | Multi-modal image attachments | Blocked on local model support — revisit when vision models are common |
 | Voice input (push-to-talk, Whisper-backed) | High effort; not core identity |
-| Ollama model marketplace browser | Nice-to-have; Ollama's own UI covers this |
 | Artifacts side panel | Deferred from Sprint 3 · RICE: 5·3·0.5·5 = 1.5 |
 | Conversation branching | Fork from any message · RICE: 4·2·0.5·4 = 1.0 |
 | Encrypted conversation storage | Low demand until user base grows |
 | Windows tray icon + global hotkey | Quality-of-life; Sprint 4 candidate if demand appears |
+
+### Small-Model Optimizations (SmallCode-inspired)
+Evaluated against [SmallCode](https://github.com/Doorman11991/smallcode) — a terminal coding agent built specifically for 8B-35B models on consumer hardware. Its techniques aren't relevant to Golem's current chat-first design, but become worthwhile if Golem ever gets a sustained developer workspace (multi-file, multi-turn agentic editing). Techniques to revisit at that point:
+- **Tool schema routing** — only inject tool schemas relevant to the message type, saving 400-800 context tokens per call
+- **Patch-first file editing** — search-and-replace instead of full file rewrites; small models are unreliable at reproducing whole files accurately
+- **Plan injection** — anchor the model to a numbered plan on every turn for multi-step tasks so it doesn't drift
+- **Forgiving tool-call parser** — regex-recover malformed JSON tool calls rather than hard-failing
 
 ### Evaluated and Rejected
 - **RAG / Document Q&A** — would make Golem compete with AnythingLLM; existing file-context + filesystem tools cover 70% of the value. Not our fight.

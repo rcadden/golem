@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar'
 import ChatView from './components/ChatView'
 import SettingsView from './components/SettingsView'
 import StatsView from './components/StatsView'
+import LibraryView from './components/LibraryView'
+import FirstRunView from './components/FirstRunView'
 import TitleBar from './components/TitleBar'
 
 const api = window.golem
@@ -17,6 +19,7 @@ export default function App() {
   const [skills, setSkills] = useState([])
   const [projects, setProjects] = useState([])   // each has .files and .conversations
   const [ollamaReady, setOllamaReady] = useState(null)
+  const [ollamaInstalled, setOllamaInstalled] = useState(null) // null = checking
   const [pendingInput, setPendingInput] = useState('')
 
   // App-level model-pull state so progress survives navigation between views.
@@ -34,6 +37,10 @@ export default function App() {
       }
     })
     return () => api.ollama.offPullProgress()
+  }, [])
+
+  useEffect(() => {
+    api.ollama.isInstalled().then(installed => setOllamaInstalled(installed))
   }, [])
 
   useEffect(() => {
@@ -253,7 +260,29 @@ export default function App() {
 
   const titleLabel = view === 'settings' ? 'Settings'
     : view === 'stats' ? 'Stats'
+    : view === 'library' ? 'Library'
     : (activeConv?.title ?? '')
+
+  if (ollamaInstalled === null) {
+    return <div style={{ background: '#0e0e14', height: '100vh' }} />
+  }
+
+  if (ollamaInstalled === false) {
+    return (
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        <TitleBar
+          title="Welcome"
+          pulling={false}
+          pullModel=""
+          pullProgress={null}
+          pullStatus=""
+          sidebarOpen={false}
+          onToggleSidebar={() => {}}
+        />
+        <FirstRunView onInstallComplete={() => setOllamaInstalled(true)} />
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col h-full w-full overflow-hidden bg-background text-on-surface">
@@ -325,16 +354,18 @@ export default function App() {
           {view === 'settings' && (
             <SettingsView
               models={models}
-              pulling={pulling}
-              pullModel={pullModel}
-              pullStatus={pullStatus}
-              pullProgress={pullProgress}
-              onStartPull={startPull}
-              onDeleteModel={deleteModel}
             />
           )}
           {view === 'stats' && (
             <StatsView />
+          )}
+          {view === 'library' && (
+            <LibraryView
+              pulling={pulling}
+              pullModel={pullModel}
+              pullProgress={pullProgress}
+              onPull={startPull}
+            />
           )}
         </main>
       </div>

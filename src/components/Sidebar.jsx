@@ -25,6 +25,7 @@ export default function Sidebar({
   const [renameProjectValue, setRenameProjectValue] = useState('')
   const [expandedProjects, setExpandedProjects] = useState(new Set())
   const [expandedFileLists, setExpandedFileLists] = useState(new Set())
+  const [sectionsExpanded, setSectionsExpanded] = useState({ projects: false, sigils: false, skills: false })
   // MCP servers — loaded once on mount for phase-3 project associations
   const [mcpServers, setMcpServers] = useState([])
   // projectId → Set of associated server ids
@@ -195,7 +196,7 @@ export default function Sidebar({
   // ── Shared nav item ───────────────────────────────────────────────────────────
 
   const navItem = (label, icon, viewName) => {
-    const isActive = (viewName === 'settings' || viewName === 'stats') && activeView === viewName
+    const isActive = (viewName === 'settings' || viewName === 'stats' || viewName === 'library') && activeView === viewName
     return (
       <button
         onClick={() => onSetView(viewName)}
@@ -404,10 +405,38 @@ export default function Sidebar({
           {/* Normal sections — hidden during search */}
           {!search.trim() && (<>
 
-          {/* Projects */}
+          {/* Pinned conversations — always at top */}
+          {pinned.length > 0 && (
+            <div>
+              <div className="px-2 mb-1.5">
+                <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Pinned</span>
+              </div>
+              <div className="flex flex-col gap-px">
+                {pinned.map(conv => <ConvRow key={conv.id} conv={conv} />)}
+              </div>
+            </div>
+          )}
+
+          {/* Recent conversations — always visible */}
+          <div>
+            <div className="px-2 mb-1.5">
+              <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Recent</span>
+            </div>
+            <div className="flex flex-col gap-px">
+              {recent.map(conv => <ConvRow key={conv.id} conv={conv} />)}
+            </div>
+          </div>
+
+          {/* Projects — collapsible */}
           <div>
             <div className="px-2 mb-1.5 flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Projects</span>
+              <button
+                onClick={() => setSectionsExpanded(prev => ({ ...prev, projects: !prev.projects }))}
+                className="flex items-center gap-1.5 text-left"
+              >
+                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'rgba(196,192,216,0.3)', transform: sectionsExpanded.projects ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
+                <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Projects</span>
+              </button>
               <button
                 onClick={handleCreateProject}
                 className="p-0.5 rounded hover:bg-white/5 text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
@@ -417,7 +446,7 @@ export default function Sidebar({
               </button>
             </div>
 
-            {projects.length === 0 ? (
+            {sectionsExpanded.projects && (projects.length === 0 ? (
               <button
                 onClick={handleCreateProject}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-on-surface-variant/40 hover:text-on-surface-variant/70 hover:bg-white/5 transition-colors text-left"
@@ -645,13 +674,19 @@ export default function Sidebar({
                   )
                 })}
               </div>
-            )}
+            ))}
           </div>
 
-          {/* Sigils */}
+          {/* Sigils — collapsible */}
           <div>
             <div className="px-2 mb-1.5 flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Sigils</span>
+              <button
+                onClick={() => setSectionsExpanded(prev => ({ ...prev, sigils: !prev.sigils }))}
+                className="flex items-center gap-1.5 text-left"
+              >
+                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'rgba(196,192,216,0.3)', transform: sectionsExpanded.sigils ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
+                <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Sigils</span>
+              </button>
               <button
                 onClick={() => setSigilModal({ sigil: null })}
                 className="p-0.5 rounded hover:bg-white/5 text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
@@ -660,7 +695,7 @@ export default function Sidebar({
                 <span className="material-symbols-outlined text-[14px]">add</span>
               </button>
             </div>
-            {sigils.length === 0 ? (
+            {sectionsExpanded.sigils && (sigils.length === 0 ? (
               <button
                 onClick={() => setSigilModal({ sigil: null })}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-on-surface-variant/40 hover:text-on-surface-variant/70 hover:bg-white/5 transition-colors text-left"
@@ -694,13 +729,19 @@ export default function Sidebar({
                   </div>
                 ))}
               </div>
-            )}
+            ))}
           </div>
 
-          {/* Skills */}
+          {/* Skills — collapsible */}
           <div>
             <div className="px-2 mb-1.5 flex items-center justify-between">
-              <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Skills</span>
+              <button
+                onClick={() => setSectionsExpanded(prev => ({ ...prev, skills: !prev.skills }))}
+                className="flex items-center gap-1.5 text-left"
+              >
+                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'rgba(196,192,216,0.3)', transform: sectionsExpanded.skills ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
+                <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Skills</span>
+              </button>
               <button
                 onClick={() => setSkillModal('new')}
                 className="p-0.5 rounded hover:bg-white/5 text-on-surface-variant/40 hover:text-on-surface-variant transition-colors"
@@ -710,7 +751,7 @@ export default function Sidebar({
               </button>
             </div>
 
-            {skills.length === 0 ? (
+            {sectionsExpanded.skills && (skills.length === 0 ? (
               <button
                 onClick={() => setSkillModal('new')}
                 className="w-full flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] text-on-surface-variant/40 hover:text-on-surface-variant/70 hover:bg-white/5 transition-colors text-left"
@@ -759,29 +800,7 @@ export default function Sidebar({
                   </div>
                 ))}
               </div>
-            )}
-          </div>
-
-          {/* Pinned conversations */}
-          {pinned.length > 0 && (
-            <div>
-              <div className="px-2 mb-1.5">
-                <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Pinned</span>
-              </div>
-              <div className="flex flex-col gap-px">
-                {pinned.map(conv => <ConvRow key={conv.id} conv={conv} />)}
-              </div>
-            </div>
-          )}
-
-          {/* Recent conversations */}
-          <div>
-            <div className="px-2 mb-1.5">
-              <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Recent</span>
-            </div>
-            <div className="flex flex-col gap-px">
-              {recent.map(conv => <ConvRow key={conv.id} conv={conv} />)}
-            </div>
+            ))}
           </div>
 
           </>)}
@@ -789,6 +808,7 @@ export default function Sidebar({
 
         {/* Bottom nav */}
         <div className="px-3 pb-3 pt-2 no-drag flex flex-col gap-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+          {navItem('Library', 'collections_bookmark', 'library')}
           {navItem('Stats', 'bar_chart', 'stats')}
           {navItem('Settings', 'settings', 'settings')}
           {navItem('Help', 'help', 'help')}

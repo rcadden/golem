@@ -61,6 +61,11 @@ contextBridge.exposeInMainWorld('golem', {
   ollama: {
     listModels:      ()        => ipcRenderer.invoke('ollama:listModels'),
     ensureRunning:   ()        => ipcRenderer.invoke('ollama:ensureRunning'),
+    isInstalled:     ()        => ipcRenderer.invoke('ollama:isInstalled'),
+    install:         ()        => ipcRenderer.invoke('ollama:install'),
+    waitForReady:    ()        => ipcRenderer.invoke('ollama:waitForReady'),
+    onInstallProgress:  (cb)   => ipcRenderer.on('ollama:installProgress', (_, data) => cb(data)),
+    offInstallProgress: ()     => ipcRenderer.removeAllListeners('ollama:installProgress'),
     pullModel:       (name)    => ipcRenderer.invoke('ollama:pullModel', name),
     deleteModel:     (name)    => ipcRenderer.invoke('ollama:deleteModel', name),
     startStream:     (payload) => ipcRenderer.invoke('ollama:startStream', payload),

@@ -1,5 +1,6 @@
 # Data (runtime-generated, never commit)
 data/
+!src/data/
 
 # Node
 node_modules/

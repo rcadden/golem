@@ -7,6 +7,7 @@ const fs = require('fs')
 const db = require('./db')
 const tools = require('./tools/registry')
 const mcpManager = require('./mcp/client')
+const { isOllamaInstalled, downloadAndInstall, waitForOllama } = require('./ollama-installer')
 const { autoUpdater } = require('electron-updater')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
@@ -75,9 +76,7 @@ function setupAutoUpdater() {
     console.error('[updater]', err?.message ?? err)
   })
 
-  // Check on launch, then every 4 hours
   autoUpdater.checkForUpdates().catch(() => {})
-  setInterval(() => autoUpdater.checkForUpdates().catch(() => {}), 4 * 60 * 60 * 1000)
 }
 
 ipcMain.on('updater:install', () => {
@@ -359,6 +358,16 @@ function findOllamaExe() {
 }
 
 // ── Ollama IPC ────────────────────────────────────────────────────────────────
+
+ipcMain.handle('ollama:isInstalled', () => isOllamaInstalled())
+
+ipcMain.handle('ollama:install', async () => {
+  await downloadAndInstall(mainWindow)
+})
+
+ipcMain.handle('ollama:waitForReady', async () => {
+  return waitForOllama(60000)
+})
 
 ipcMain.handle('ollama:ensureRunning', async () => {
   if (await isOllamaReady()) return true
