@@ -83,6 +83,8 @@ _No commitment. Parking lot for evaluated ideas._
 
 | Idea | Notes |
 |------|-------|
+| `docs/BRANCHING.md` | Document branching strategy and PR rules — worth writing once contribution patterns are established |
+| `SECURITY.md` | Vulnerability reporting policy — add if/when the project grows a contributor base |
 | Multi-modal image attachments | Blocked on local model support — revisit when vision models are common |
 | Voice input (push-to-talk, Whisper-backed) | High effort; not core identity |
 | Ollama model marketplace browser | Nice-to-have; Ollama's own UI covers this |
