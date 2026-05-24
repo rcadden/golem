@@ -4,6 +4,19 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.8.0] — 2026-05-24
+
+### Added
+- **Ollama install flow** — Golem detects if Ollama is missing at launch and shows a first-run screen. On Windows, downloads and silently installs Ollama automatically with a live progress bar. On macOS/Linux, opens the Ollama download page with a manual confirmation step.
+- **Model Library** — new Library section in the bottom nav with a curated catalog of 17 model families (~35 sizes). Each card shows hardware-aware tier badges (Runs great / Might be OK / Not a chance) based on detected GPU VRAM. Filter by tier, use case, and parameter size; pull directly from the library card with live progress.
+- **Installed tab** inside Library — lists locally pulled models with delete and set-as-default actions. Model management has been removed from Settings (only the default model selector remains there).
+- **Collapsible sidebar sections** — Projects, Sigils, and Skills sections are collapsed by default, keeping Chats always visible at the top.
+
+### Changed
+- Auto-update check now runs once on launch only; removed the 4-hour polling interval.
+
+---
+
 ## [0.7.0] — 2026-05-23
 
 ### Added
