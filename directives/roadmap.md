@@ -65,13 +65,13 @@ _Harden what exists. Expand who can run it._
 
 ---
 
-## Sprint 5 — Onboarding & Discovery (v0.8.0)
+## Sprint 5 — Onboarding & Discovery (v0.8.0) ✓
 _Make Golem approachable for someone who's never run a local model._
 
-- [ ] **Ollama install flow** — detect if Ollama is missing at launch; show a first-run screen with a one-click install button; download platform installer, run it, poll until Ollama responds, then continue normally · RICE: 8·4·0.8·3 = 8.5
-- [ ] **Model library view** — new Library view (bottom nav); curated list of ~60-80 models with metadata (description, use case tags, context length, VRAM per quant); hardware-aware tier badges (Runs great / Might be OK / Not a chance) based on detected GPU VRAM; filter by tier, use case, parameter size; sort by name/size/compatibility; pull from the library card · RICE: 7·4·0.8·5 = 4.5
-- [ ] **Installed models tab** — consolidate the existing model pull/delete UI from Settings into the Library view under an "Installed" tab; Settings retains only the default model selector
-- [ ] **Auto-update on launch only** — remove the 4-hour polling interval; check once on launch _(code already written)_ · RICE: trivial
+- [x] **Ollama install flow** — detect if Ollama is missing at launch; show a first-run screen with a one-click install button; download platform installer, run it, poll until Ollama responds, then continue normally · RICE: 8·4·0.8·3 = 8.5
+- [x] **Model library view** — new Library view (bottom nav); curated list of 17 model families (~35 sizes) with metadata (description, use case tags, context length, VRAM per quant); hardware-aware tier badges (Runs great / Might be OK / Not a chance) based on detected GPU VRAM; filter by tier, use case, parameter size; pull from the library card · RICE: 7·4·0.8·5 = 4.5
+- [x] **Installed models tab** — consolidate the existing model pull/delete UI from Settings into the Library view under an "Installed" tab; Settings retains only the default model selector
+- [x] **Auto-update on launch only** — remove the 4-hour polling interval; check once on launch · RICE: trivial
 
 ---
 
