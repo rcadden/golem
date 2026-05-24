@@ -4,6 +4,14 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.8.1] — 2026-05-24
+
+### Fixed
+- **GPU VRAM detection** — Fixed WMI integer wrap-around for GPUs with 4 GB or more VRAM (e.g. RTX 3050 Ti) by querying `nvidia-smi` first and falling back to `wmic`.
+- **Packaging build** — Corrected `publisherName` location in `package.json` from the `nsis` block to the `win` block to fix electron-builder schema validation failures.
+
+---
+
 ## [0.8.0] — 2026-05-24
 
 ### Added
