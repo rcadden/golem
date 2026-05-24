@@ -45,6 +45,7 @@
   "build": {
     "appId": "com.antigravity.golem",
     "productName": "Golem",
+    "copyright": "Copyright © 2025 Antigravity Projects",
     "icon": "public/icon.png",
     "asar": true,
     "asarUnpack": [
@@ -114,7 +115,8 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Golem"
+      "shortcutName": "Golem",
+      "publisherName": "Antigravity Projects"
     },
     "nativeRebuilder": "sequential",
     "publish": {
