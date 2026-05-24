@@ -723,30 +723,54 @@ ipcMain.handle('system:getHardwareInfo', async () => {
   const totalMem = os.totalmem()
   const freeMem  = os.freemem()
 
-  // GPU detection — Windows only via wmic
+  // GPU detection — try nvidia-smi first (accurate VRAM), fall back to wmic
   let gpus = []
+
+  // Attempt nvidia-smi for NVIDIA GPUs
   try {
-    const raw = await new Promise((resolve, reject) => {
-      execFile('wmic', [
-        'path', 'win32_VideoController',
-        'get', 'Name,AdapterRAM',
-        '/format:csv',
+    const nvsmi = await new Promise((resolve, reject) => {
+      execFile('nvidia-smi', [
+        '--query-gpu=name,memory.total',
+        '--format=csv,noheader,nounits',
       ], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
         if (err) reject(err)
         else resolve(stdout)
       })
     })
-    // wmic CSV: Node,AdapterRAM,Name
-    gpus = raw.split('\n')
-      .slice(1)
-      .map(line => line.trim().split(','))
-      .filter(parts => parts.length >= 3 && parts[2])
-      .map(parts => ({
-        name:      parts[2].trim(),
-        vramBytes: parseInt(parts[1]) || 0,
-      }))
-      .filter(g => g.name && g.name !== 'Name')
-  } catch {}
+    gpus = nvsmi.split('\n')
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const idx = line.lastIndexOf(',')
+        const name = line.slice(0, idx).trim()
+        const vramMb = parseInt(line.slice(idx + 1).trim()) || 0
+        return { name, vramBytes: vramMb * 1024 * 1024 }
+      })
+      .filter(g => g.name)
+  } catch {
+    // nvidia-smi not available — fall back to wmic
+    try {
+      const raw = await new Promise((resolve, reject) => {
+        execFile('wmic', [
+          'path', 'win32_VideoController',
+          'get', 'Name,AdapterRAM',
+          '/format:csv',
+        ], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+          if (err) reject(err)
+          else resolve(stdout)
+        })
+      })
+      gpus = raw.split('\n')
+        .slice(1)
+        .map(line => line.trim().split(','))
+        .filter(parts => parts.length >= 3 && parts[2])
+        .map(parts => ({
+          name:      parts[2].trim(),
+          vramBytes: parseInt(parts[1]) || 0,
+        }))
+        .filter(g => g.name && g.name !== 'Name')
+    } catch {}
+  }
 
   return {
     cpu:     { model: cpus[0]?.model ?? 'Unknown', cores: cpus.length, speedMhz: cpus[0]?.speed ?? 0 },
