@@ -69,7 +69,8 @@
           ]
         }
       ],
-      "icon": "public/icon.png"
+      "icon": "public/icon.png",
+      "publisherName": "Applied Flux, LLC"
     },
     "mac": {
       "target": [
@@ -115,8 +116,7 @@
       "perMachine": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Golem",
-      "publisherName": "Applied Flux, LLC"
+      "shortcutName": "Golem"
     },
     "nativeRebuilder": "sequential",
     "publish": {
