@@ -93,6 +93,7 @@ _No commitment. Parking lot for evaluated ideas._
 
 | Idea | Notes |
 |------|-------|
+| **GPU VRAM detection fix** | `wmic AdapterRAM` is a 32-bit field — wraps to 0 for GPUs ≥4 GB (confirmed broken on RTX 3050 Ti). Fix: try `nvidia-smi --query-gpu=name,memory.total --format=csv,noheader,nounits` first; fall back to wmic for name-only on non-NVIDIA. Patch in `electron/main.js` `system:getHardwareInfo` handler. |
 | `docs/BRANCHING.md` | Document branching strategy and PR rules — worth writing once contribution patterns are established |
 | `SECURITY.md` | Vulnerability reporting policy — add if/when the project grows a contributor base |
 | Multi-modal image attachments | Blocked on local model support — revisit when vision models are common |
