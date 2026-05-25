@@ -61,6 +61,11 @@ contextBridge.exposeInMainWorld('golem', {
     getLoginItemEnabled: ()       => ipcRenderer.invoke('app:getLoginItemEnabled'),
     setLoginItem:        (enable) => ipcRenderer.invoke('app:setLoginItem', enable),
   },
+  tray: {
+    getConfig:  ()              => ipcRenderer.invoke('tray:getConfig'),
+    setEnabled: (enabled)       => ipcRenderer.invoke('tray:setEnabled', enabled),
+    setHotkey:  (accelerator)   => ipcRenderer.invoke('tray:setHotkey', accelerator),
+  },
   ollama: {
     listModels:      ()        => ipcRenderer.invoke('ollama:listModels'),
     ensureRunning:   ()        => ipcRenderer.invoke('ollama:ensureRunning'),

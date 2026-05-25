@@ -126,6 +126,9 @@ export default function SettingsView({
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434')
   const [memory, setMemory] = useState('')
   const [launchAtStartup, setLaunchAtStartup] = useState(false)
+  const [trayEnabled, setTrayEnabled] = useState(true)
+  const [trayHotkey, setTrayHotkey] = useState('Alt+G')
+  const [hotkeyError, setHotkeyError] = useState('')
   const [accentColor, setAccentColor] = useState('#6366f1')
   const [numCtx, setNumCtxState] = useState(16384)
   const [memoryPath, setMemoryPath] = useState(null)  // null = using default path
@@ -168,6 +171,12 @@ export default function SettingsView({
       } catch (err) {
         console.error('[Settings] load failed:', err)
       }
+
+      try {
+        const trayConfig = await api.tray.getConfig()
+        setTrayEnabled(trayConfig.enabled)
+        setTrayHotkey(trayConfig.hotkey)
+      } catch {}
 
       // Hardware
       api.system.getHardwareInfo().then(info => setHwInfo(info)).catch(() => {})
@@ -244,6 +253,29 @@ export default function SettingsView({
   async function handleNumCtxChange(value) {
     setNumCtxState(value)
     await api.db.setSetting('num_ctx', String(value))
+  }
+
+  async function handleTrayToggle(value) {
+    setTrayEnabled(value)
+    await api.tray.setEnabled(value)
+  }
+
+  async function handleHotkeyChange(value) {
+    setTrayHotkey(value)
+    setHotkeyError('')
+  }
+
+  async function handleHotkeyBlur() {
+    if (!trayHotkey.trim()) {
+      await api.tray.setHotkey('')
+      return
+    }
+    try {
+      await api.tray.setHotkey(trayHotkey.trim())
+      setHotkeyError('')
+    } catch {
+      setHotkeyError('Invalid shortcut format')
+    }
   }
 
   async function handleMcpAdd() {
@@ -808,6 +840,49 @@ export default function SettingsView({
                 />
               </div>
             </label>
+
+            <div className="mt-4 pt-4 border-t border-outline-variant">
+              <label className="flex items-center justify-between cursor-pointer group">
+                <div>
+                  <div className="text-label-md text-on-surface">Minimize to tray</div>
+                  <div className="text-[12px] text-on-surface-variant/60 mt-0.5">
+                    Closing the window hides Golem to the system tray instead of quitting
+                  </div>
+                </div>
+                <div
+                  onClick={() => handleTrayToggle(!trayEnabled)}
+                  className="relative shrink-0 w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer"
+                  style={{ background: trayEnabled ? 'var(--accent)' : 'rgba(255,255,255,0.12)' }}
+                >
+                  <div
+                    className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
+                    style={{ transform: trayEnabled ? 'translateX(18px)' : 'translateX(2px)' }}
+                  />
+                </div>
+              </label>
+
+              {trayEnabled && (
+                <div className="mt-3">
+                  <label className="block text-label-md text-on-surface-variant mb-1.5">
+                    Global hotkey <span className="text-[11px] opacity-50 ml-1">show/hide from anywhere</span>
+                  </label>
+                  <input
+                    value={trayHotkey}
+                    onChange={e => handleHotkeyChange(e.target.value)}
+                    onBlur={handleHotkeyBlur}
+                    placeholder="Alt+G"
+                    className="w-48 bg-background border border-outline-variant rounded-lg px-3 py-2 text-on-surface font-mono text-[13px] focus:outline-none focus:border-primary transition-all"
+                    style={hotkeyError ? { borderColor: 'rgba(220,70,70,0.6)' } : {}}
+                  />
+                  {hotkeyError && (
+                    <p className="mt-1 text-[11px]" style={{ color: 'rgba(220,80,80,0.8)' }}>{hotkeyError}</p>
+                  )}
+                  <p className="mt-1 text-[11px] text-on-surface-variant/40">
+                    Electron format: Alt+G, Ctrl+Shift+Space, etc. Leave blank to disable.
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
