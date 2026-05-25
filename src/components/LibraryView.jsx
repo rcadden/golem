@@ -3,6 +3,7 @@ import {
   MODELS_CATALOG, calculateTier,
   TIER_LABEL, TIER_COLOR,
   TAG_LABEL, TAG_COLOR,
+  TOOLS_COLOR,
 } from '../data/models-catalog'
 
 const api = window.golem
@@ -111,6 +112,8 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
   const [filterTier, setFilterTier] = useState('all')
   const [filterTag, setFilterTag] = useState('all')
   const [filterSize, setFilterSize] = useState('all')
+  const [filterTools, setFilterTools] = useState('all')   // 'all' | 'yes' | 'no'
+  const [showDeprecated, setShowDeprecated] = useState(false)
   const [selectedSize, setSelectedSize] = useState({})  // modelId → tag string
   const [search, setSearch] = useState('')
 
@@ -144,9 +147,12 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
   }
 
   const filtered = MODELS_CATALOG.filter(m => {
-    if (filterTier !== 'all' && getBestTier(m) !== filterTier) return false
-    if (filterTag  !== 'all' && !m.tags.includes(filterTag))   return false
-    if (filterSize !== 'all' && !sizeRanges[filterSize](m))    return false
+    if (!showDeprecated && m.deprecated) return false
+    if (filterTier  !== 'all' && getBestTier(m) !== filterTier) return false
+    if (filterTag   !== 'all' && !m.tags.includes(filterTag))   return false
+    if (filterSize  !== 'all' && !sizeRanges[filterSize](m))    return false
+    if (filterTools === 'yes' && !m.tools)  return false
+    if (filterTools === 'no'  && m.tools)   return false
     if (search && !m.name.toLowerCase().includes(search.toLowerCase()) &&
                   !m.description.toLowerCase().includes(search.toLowerCase())) return false
     return true
@@ -212,6 +218,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
 
         {/* Filters — Browse tab only */}
         {tab === 'browse' && (
+          <div>
           <div className="flex flex-wrap gap-2 items-center">
             <input
               value={search}
@@ -235,6 +242,24 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
             {[['all','All'],['small','≤3B'],['medium','4–13B'],['large','14B+']].map(([v,l]) => (
               <FilterBtn key={v} state={filterSize} setter={setFilterSize} value={v} label={l} />
             ))}
+          </div>
+          <div className="flex flex-wrap gap-2 items-center mt-2">
+            <span className="text-[11px] uppercase tracking-wider mr-1" style={{ color: 'rgba(196,192,216,0.3)' }}>Tools</span>
+            {[['all','All'],['yes','Supports tools'],['no','No tools']].map(([v,l]) => (
+              <FilterBtn key={v} state={filterTools} setter={setFilterTools} value={v} label={l} />
+            ))}
+            <div className="flex-1" />
+            <button
+              onClick={() => setShowDeprecated(v => !v)}
+              className="px-3 py-1 rounded-lg text-[12px] font-medium transition-colors"
+              style={showDeprecated
+                ? { background: 'rgba(220,160,30,0.15)', color: 'rgba(230,180,50,0.9)', border: '1px solid rgba(220,160,30,0.3)' }
+                : { background: 'rgba(255,255,255,0.04)', color: 'rgba(196,192,216,0.4)', border: '1px solid rgba(255,255,255,0.07)' }
+              }
+            >
+              {showDeprecated ? 'Hide legacy' : 'Show legacy'}
+            </button>
+          </div>
           </div>
         )}
       </div>
@@ -279,6 +304,19 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
                             </span>
                           )
                         })}
+                        {model.tools && (
+                          <span className="text-[11px] px-2 py-0.5 rounded flex items-center gap-1"
+                            style={{ background: TOOLS_COLOR.bg, color: TOOLS_COLOR.text, border: `1px solid ${TOOLS_COLOR.border}` }}>
+                            <span className="material-symbols-outlined text-[11px]">build</span>
+                            Tools
+                          </span>
+                        )}
+                        {model.deprecated && (
+                          <span className="text-[11px] px-2 py-0.5 rounded"
+                            style={{ background: 'rgba(220,160,30,0.1)', color: 'rgba(220,160,30,0.6)', border: '1px solid rgba(220,160,30,0.2)' }}>
+                            Legacy
+                          </span>
+                        )}
                         <span className="text-[11px]" style={{ color: 'rgba(196,192,216,0.3)' }}>
                           {model.context_k}K ctx
                         </span>
