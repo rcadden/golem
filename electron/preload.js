@@ -46,8 +46,11 @@ contextBridge.exposeInMainWorld('golem', {
     searchMessages:           (query)      => ipcRenderer.invoke('db:searchMessages', query),
   },
   memory: {
-    load: ()        => ipcRenderer.invoke('memory:load'),
-    save: (content) => ipcRenderer.invoke('memory:save', content),
+    load:       ()           => ipcRenderer.invoke('memory:load'),
+    save:       (content)    => ipcRenderer.invoke('memory:save', content),
+    getPath:    ()           => ipcRenderer.invoke('memory:getPath'),
+    setPath:    (filePath)   => ipcRenderer.invoke('memory:setPath', filePath),
+    browsePath: ()           => ipcRenderer.invoke('memory:browsePath'),
   },
   dialog: {
     openFile:      ()     => ipcRenderer.invoke('dialog:openFile'),

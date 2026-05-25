@@ -142,6 +142,28 @@ ipcMain.handle('db:searchMessages', (_, query) => db.searchMessages(query))
 ipcMain.handle('memory:load',     ()                   => db.loadMemory())
 ipcMain.handle('memory:save',     (_, content)         => db.saveMemory(content))
 
+ipcMain.handle('memory:getPath', () => {
+  const custom = db.getSetting('memory_path', '')
+  return custom && custom.trim() ? custom.trim() : null
+})
+
+ipcMain.handle('memory:setPath', (_, filePath) => {
+  db.setSetting('memory_path', filePath || '')
+})
+
+ipcMain.handle('memory:browsePath', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Memory File',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Text & Markdown', extensions: ['txt', 'md'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  })
+  if (result.canceled || !result.filePaths.length) return null
+  return result.filePaths[0]
+})
+
 ipcMain.handle('dialog:saveFile', async (_, { defaultName, content }) => {
   const result = await dialog.showSaveDialog(mainWindow, {
     defaultPath: defaultName,
