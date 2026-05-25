@@ -40,8 +40,8 @@ function InstalledTab({ models, hardware, onRefresh }) {
   if (models.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 mt-16 text-center">
-        <span className="material-symbols-outlined text-[40px]" style={{ color: 'rgba(196,192,216,0.2)' }}>inbox</span>
-        <p className="text-[13px]" style={{ color: 'rgba(196,192,216,0.4)' }}>
+        <span className="material-symbols-outlined text-[40px]" style={{ color: 'var(--text-faint)' }}>inbox</span>
+        <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
           No models installed yet. Browse the catalog and pull one.
         </p>
       </div>
@@ -59,7 +59,7 @@ function InstalledTab({ models, hardware, onRefresh }) {
         return (
           <div key={name}
             className="flex items-center gap-4 px-5 py-3.5 rounded-xl"
-            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
 
             <span className="material-symbols-outlined text-[18px]"
               style={{ color: 'var(--accent)', fontVariationSettings: "'FILL' 1" }}>
@@ -78,9 +78,9 @@ function InstalledTab({ models, hardware, onRefresh }) {
             <button
               onClick={() => handleSetDefault(name)}
               className="text-[11px] px-2.5 py-1 rounded-lg transition-colors"
-              style={{ background: 'rgba(255,255,255,0.04)', color: 'rgba(196,192,216,0.5)', border: '1px solid rgba(255,255,255,0.07)' }}
+              style={{ background: 'var(--bg-overlay)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
               onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.1)'; e.currentTarget.style.color = 'var(--accent-light)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-overlay)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
               title="Set as default model"
             >
               Set default
@@ -180,28 +180,28 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
         className="px-3 py-1 rounded-lg text-[12px] font-medium transition-colors"
         style={state === value
           ? { background: 'rgba(var(--accent-rgb),0.2)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.35)' }
-          : { background: 'rgba(255,255,255,0.04)', color: 'rgba(196,192,216,0.55)', border: '1px solid rgba(255,255,255,0.07)' }
+          : { background: 'var(--bg-overlay)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }
         }
       >{label}</button>
     )
   }
 
   return (
-    <div className="flex flex-col h-full" style={{ background: '#0e0e14' }}>
+    <div className="flex flex-col h-full" style={{ background: 'var(--bg-base)' }}>
       {/* Header */}
       <div className="px-8 pt-8 pb-4">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-[22px] font-bold text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Model Library</h1>
             {gpuName && gpuVramGb && (
-              <p className="text-[12px] mt-1" style={{ color: 'rgba(196,192,216,0.4)' }}>
+              <p className="text-[12px] mt-1" style={{ color: 'var(--text-muted)' }}>
                 {gpuName} · {gpuVramGb} GB VRAM
               </p>
             )}
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'rgba(255,255,255,0.05)' }}>
+          <div className="flex gap-1 p-1 rounded-xl" style={{ background: 'var(--bg-card-hover)' }}>
             {['browse', 'installed'].map(t => (
               <button
                 key={t}
@@ -209,7 +209,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
                 className="px-4 py-1.5 rounded-lg text-[13px] font-medium capitalize transition-all"
                 style={tab === t
                   ? { background: 'rgba(var(--accent-rgb),0.2)', color: 'var(--accent-light)' }
-                  : { color: 'rgba(196,192,216,0.5)' }
+                  : { color: 'var(--text-secondary)' }
                 }
               >{t}</button>
             ))}
@@ -225,26 +225,26 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
               onChange={e => setSearch(e.target.value)}
               placeholder="Search models…"
               className="rounded-lg px-3 py-1.5 text-[12px] text-on-surface outline-none mr-2"
-              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)', width: 180 }}
+              style={{ background: 'var(--bg-input)', border: '1px solid var(--border-mid)', width: 180 }}
             />
 
-            <span className="text-[11px] uppercase tracking-wider mr-1" style={{ color: 'rgba(196,192,216,0.3)' }}>Tier</span>
+            <span className="text-[11px] uppercase tracking-wider mr-1" style={{ color: 'var(--text-faint)' }}>Tier</span>
             {[['all','All'],['great','Runs great'],['ok','Might be OK'],['no','Not a chance']].map(([v,l]) => (
               <FilterBtn key={v} state={filterTier} setter={setFilterTier} value={v} label={l} />
             ))}
 
-            <span className="text-[11px] uppercase tracking-wider ml-2 mr-1" style={{ color: 'rgba(196,192,216,0.3)' }}>Use</span>
+            <span className="text-[11px] uppercase tracking-wider ml-2 mr-1" style={{ color: 'var(--text-faint)' }}>Use</span>
             {[['all','All'], ...ALL_TAGS.map(t => [t, TAG_LABEL[t]])].map(([v,l]) => (
               <FilterBtn key={v} state={filterTag} setter={setFilterTag} value={v} label={l} />
             ))}
 
-            <span className="text-[11px] uppercase tracking-wider ml-2 mr-1" style={{ color: 'rgba(196,192,216,0.3)' }}>Size</span>
+            <span className="text-[11px] uppercase tracking-wider ml-2 mr-1" style={{ color: 'var(--text-faint)' }}>Size</span>
             {[['all','All'],['small','≤3B'],['medium','4–13B'],['large','14B+']].map(([v,l]) => (
               <FilterBtn key={v} state={filterSize} setter={setFilterSize} value={v} label={l} />
             ))}
           </div>
           <div className="flex flex-wrap gap-2 items-center mt-2">
-            <span className="text-[11px] uppercase tracking-wider mr-1" style={{ color: 'rgba(196,192,216,0.3)' }}>Tools</span>
+            <span className="text-[11px] uppercase tracking-wider mr-1" style={{ color: 'var(--text-faint)' }}>Tools</span>
             {[['all','All'],['yes','Supports tools'],['no','No tools']].map(([v,l]) => (
               <FilterBtn key={v} state={filterTools} setter={setFilterTools} value={v} label={l} />
             ))}
@@ -254,7 +254,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
               className="px-3 py-1 rounded-lg text-[12px] font-medium transition-colors"
               style={showDeprecated
                 ? { background: 'rgba(220,160,30,0.15)', color: 'rgba(230,180,50,0.9)', border: '1px solid rgba(220,160,30,0.3)' }
-                : { background: 'rgba(255,255,255,0.04)', color: 'rgba(196,192,216,0.4)', border: '1px solid rgba(255,255,255,0.07)' }
+                : { background: 'var(--bg-overlay)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }
               }
             >
               {showDeprecated ? 'Hide legacy' : 'Show legacy'}
@@ -269,7 +269,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
         {tab === 'browse' && (
           <div className="flex flex-col gap-3">
             {filtered.length === 0 && (
-              <p className="text-[13px] mt-8 text-center" style={{ color: 'rgba(196,192,216,0.3)' }}>
+              <p className="text-[13px] mt-8 text-center" style={{ color: 'var(--text-faint)' }}>
                 No models match these filters.
               </p>
             )}
@@ -284,7 +284,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
               return (
                 <div key={model.id}
                   className="rounded-xl p-5 flex flex-col gap-3"
-                  style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                  style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
 
                   {/* Top row */}
                   <div className="flex items-start justify-between gap-4">
@@ -292,7 +292,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="text-[15px] font-semibold text-on-surface">{model.name}</span>
                         <span className="text-[11px] px-2 py-0.5 rounded"
-                          style={{ background: 'rgba(255,255,255,0.06)', color: 'rgba(196,192,216,0.5)' }}>
+                          style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)' }}>
                           {model.family}
                         </span>
                         {model.tags.map(tag => {
@@ -317,11 +317,11 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
                             Legacy
                           </span>
                         )}
-                        <span className="text-[11px]" style={{ color: 'rgba(196,192,216,0.3)' }}>
+                        <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
                           {model.context_k}K ctx
                         </span>
                       </div>
-                      <p className="text-[13px] leading-relaxed" style={{ color: 'rgba(196,192,216,0.6)' }}>
+                      <p className="text-[13px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                         {model.description}
                       </p>
                     </div>
@@ -345,7 +345,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
                           className="px-2.5 py-1 rounded-lg text-[12px] transition-all"
                           style={isSelected
                             ? { background: 'rgba(var(--accent-rgb),0.2)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.4)' }
-                            : { background: 'rgba(255,255,255,0.04)', color: 'rgba(196,192,216,0.55)', border: '1px solid rgba(255,255,255,0.07)' }
+                            : { background: 'var(--bg-overlay)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }
                           }
                           title={`${size.vram_gb} GB VRAM needed`}
                         >
@@ -360,11 +360,11 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
 
                     {pulling_ ? (
                       <div className="flex items-center gap-2">
-                        <div className="w-28 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                        <div className="w-28 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-mid)' }}>
                           <div className="h-full rounded-full transition-all"
                             style={{ width: `${pullProgress ?? 0}%`, background: 'var(--accent)' }} />
                         </div>
-                        <span className="text-[11px]" style={{ color: 'rgba(196,192,216,0.4)' }}>{pullProgress ?? 0}%</span>
+                        <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>{pullProgress ?? 0}%</span>
                       </div>
                     ) : installed ? (
                       <span className="flex items-center gap-1 text-[12px]" style={{ color: 'rgba(80,220,120,0.7)' }}>
