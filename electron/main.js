@@ -24,6 +24,8 @@ let currentHotkey = 'Alt+G'
 function createWindow() {
   const w = parseInt(db.getSetting('window_width',  '1200'))
   const h = parseInt(db.getSetting('window_height', '800'))
+  const savedTheme = db.getSetting('theme', 'dark')
+  const backgroundColor = savedTheme === 'light' ? '#f0eff5' : '#121212'
 
   const isMac = process.platform === 'darwin'
 
@@ -32,7 +34,7 @@ function createWindow() {
     height: h,
     minWidth: 800,
     minHeight: 600,
-    backgroundColor: '#121212',
+    backgroundColor,
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
     frame: isMac ? true : false,
     webPreferences: {
