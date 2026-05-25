@@ -201,9 +201,9 @@ export default function Sidebar({
       <button
         onClick={() => onSetView(viewName)}
         className="flex items-center gap-2.5 px-2 py-2 rounded-lg w-full text-left transition-all duration-150 no-drag"
-        style={isActive ? { background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)' } : { color: 'rgba(196,192,216,0.6)' }}
-        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' } }}
-        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.6)' } }}
+        style={isActive ? { background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)' } : { color: 'var(--text-secondary)' }}
+        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = 'var(--bg-overlay)'; e.currentTarget.style.color = 'var(--text-primary)' } }}
+        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' } }}
       >
         <span className="material-symbols-outlined text-[18px]" style={isActive ? { fontVariationSettings: "'FILL' 1", color: 'var(--accent-mid)' } : {}}>{icon}</span>
         <span className="text-[13px] font-medium">{label}</span>
@@ -240,18 +240,18 @@ export default function Sidebar({
                 paddingRight: '2rem',
                 ...(isActive ? { background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)' } : {}),
               }}
-              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+              onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-overlay)' }}
               onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = '' }}
             >
               <span
                 className="material-symbols-outlined shrink-0"
-                style={{ fontSize: '15px', color: isActive ? 'var(--accent-mid)' : 'rgba(196,192,216,0.4)' }}
+                style={{ fontSize: '15px', color: isActive ? 'var(--accent-mid)' : 'var(--text-muted)' }}
               >
                 {conv.pinned ? 'keep' : 'chat_bubble'}
               </span>
               <span
                 className="text-[13px] truncate leading-tight flex-1"
-                style={{ color: isActive ? 'var(--accent-light)' : 'rgba(196,192,216,0.7)' }}
+                style={{ color: isActive ? 'var(--accent-light)' : 'var(--text-secondary)' }}
               >
                 {conv.title}
               </span>
@@ -267,9 +267,9 @@ export default function Sidebar({
             <button
               onClick={e => openConvMenu(e, conv.id)}
               className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/conv:opacity-100 transition-opacity"
-              style={{ color: 'rgba(196,192,216,0.5)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+              style={{ color: 'var(--text-secondary)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
             </button>
@@ -286,10 +286,10 @@ export default function Sidebar({
     <>
       <nav
         className="flex flex-col w-64 shrink-0 h-full"
-        style={{ background: '#111118', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+        style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--border-subtle)' }}
       >
         {/* Header */}
-        <div className="drag flex items-center gap-3 px-5 py-5" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="drag flex items-center gap-3 px-5 py-5" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
           <img src={ICON_SRC} alt="Golem" className="w-8 h-8 rounded-xl no-drag" onError={e => { e.target.style.display = 'none' }} />
           <div className="no-drag">
             <div className="text-[17px] font-bold text-on-surface leading-tight tracking-tight" style={{ fontFamily: 'Hanken Grotesk' }}>Golem</div>
@@ -320,7 +320,7 @@ export default function Sidebar({
         <div className="px-3 pb-2 no-drag">
           <div className="relative">
             <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px]"
-              style={{ color: 'rgba(196,192,216,0.35)' }}>search</span>
+              style={{ color: 'var(--text-faint)' }}>search</span>
             <input
               data-search-input
               ref={searchRef}
@@ -328,15 +328,15 @@ export default function Sidebar({
               onChange={e => setSearch(e.target.value)}
               placeholder="Search conversations…"
               className="w-full rounded-lg pl-8 pr-8 py-1.5 text-[13px] text-on-surface placeholder:text-on-surface-variant/30 outline-none transition-all"
-              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}
+              style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)' }}
               onFocus={e => e.target.style.borderColor = 'rgba(var(--accent-rgb),0.4)'}
-              onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.07)'}
+              onBlur={e => e.target.style.borderColor = 'var(--border-subtle)'}
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2"
-                style={{ color: 'rgba(196,192,216,0.4)' }}
+                style={{ color: 'var(--text-muted)' }}
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>
               </button>
@@ -363,12 +363,12 @@ export default function Sidebar({
             return (
               <div className="px-2 pt-1 pb-3">
                 <div className="text-[10px] uppercase tracking-widest mb-2 px-1"
-                  style={{ color: 'rgba(196,192,216,0.3)' }}>
+                  style={{ color: 'var(--text-faint)' }}>
                   {allResults.length} result{allResults.length !== 1 ? 's' : ''}
                   {search.trim().length >= 3 && ' (title + content)'}
                 </div>
                 {allResults.length === 0 && (
-                  <div className="text-[12px] px-1" style={{ color: 'rgba(196,192,216,0.3)' }}>
+                  <div className="text-[12px] px-1" style={{ color: 'var(--text-faint)' }}>
                     No matches
                   </div>
                 )}
@@ -380,7 +380,7 @@ export default function Sidebar({
                       onClick={() => { onSelectConv(c.id); onSetView('chat') }}
                       className="flex items-center justify-between gap-2 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5"
                     >
-                      <span className="text-[13px] truncate" style={{ color: 'rgba(196,192,216,0.75)' }}>
+                      <span className="text-[13px] truncate" style={{ color: 'var(--text-secondary)' }}>
                         {c.title || 'Untitled'}
                       </span>
                       {isContentMatch && (
@@ -434,7 +434,7 @@ export default function Sidebar({
                 onClick={() => setSectionsExpanded(prev => ({ ...prev, projects: !prev.projects }))}
                 className="flex items-center gap-1.5 text-left"
               >
-                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'rgba(196,192,216,0.3)', transform: sectionsExpanded.projects ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
+                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'var(--text-faint)', transform: sectionsExpanded.projects ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
                 <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Projects</span>
               </button>
               <button
@@ -480,24 +480,24 @@ export default function Sidebar({
                             <button
                               onClick={() => toggleProject(project.id)}
                               className="w-full flex items-center gap-2 px-2 py-2 rounded-lg text-left transition-all"
-                              style={{ paddingRight: '2rem', color: 'rgba(196,192,216,0.7)' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
-                              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
+                              style={{ paddingRight: '2rem', color: 'var(--text-secondary)' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-overlay)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                             >
                               <span className="material-symbols-outlined text-[15px]" style={{ color: 'var(--accent)', fontVariationSettings: "'FILL' 1" }}>
                                 {isExpanded ? 'folder_open' : 'folder'}
                               </span>
                               <span className="text-[13px] font-medium truncate flex-1">{project.name}</span>
-                              <span className="material-symbols-outlined shrink-0 transition-transform" style={{ fontSize: '14px', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', color: 'rgba(196,192,216,0.3)' }}>
+                              <span className="material-symbols-outlined shrink-0 transition-transform" style={{ fontSize: '14px', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)', color: 'var(--text-faint)' }}>
                                 expand_more
                               </span>
                             </button>
                             <button
                               onClick={e => openProjectMenu(e, project.id)}
                               className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/proj:opacity-100 transition-opacity"
-                              style={{ color: 'rgba(196,192,216,0.5)' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
-                              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+                              style={{ color: 'var(--text-secondary)' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                              onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                             >
                               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
                             </button>
@@ -613,7 +613,7 @@ export default function Sidebar({
                                     return next
                                   })}
                                   className="flex items-center gap-1.5 px-2 py-1 w-full text-left rounded-lg transition-colors hover:bg-white/5"
-                                  style={{ color: 'rgba(196,192,216,0.4)' }}
+                                  style={{ color: 'var(--text-muted)' }}
                                 >
                                   <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>description</span>
                                   <span className="text-[11px] flex-1">Files ({project.files.length})</span>
@@ -624,7 +624,7 @@ export default function Sidebar({
                                 </button>
                                 {fileListVisible && project.files.map(file => (
                                   <div key={file.id} className="relative group/file flex items-center gap-2 px-2 py-1.5 rounded-lg"
-                                    style={{ color: 'rgba(196,192,216,0.5)' }}>
+                                    style={{ color: 'var(--text-secondary)' }}>
                                     <span className="material-symbols-outlined shrink-0" style={{ fontSize: '13px' }}>description</span>
                                     <span className="text-[12px] truncate flex-1">{file.name}</span>
                                     <button
@@ -644,9 +644,9 @@ export default function Sidebar({
                           <button
                             onClick={() => handleAddFileToProject(project.id)}
                             className="flex items-center gap-2 px-2 py-1.5 rounded-lg text-[12px] transition-colors text-left"
-                            style={{ color: 'rgba(196,192,216,0.35)' }}
-                            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; e.currentTarget.style.color = 'rgba(196,192,216,0.6)' }}
-                            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.35)' }}
+                            style={{ color: 'var(--text-faint)' }}
+                            onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-card)'; e.currentTarget.style.color = 'var(--text-secondary)' }}
+                            onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-faint)' }}
                           >
                             <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>attach_file</span>
                             Add file
@@ -684,7 +684,7 @@ export default function Sidebar({
                 onClick={() => setSectionsExpanded(prev => ({ ...prev, sigils: !prev.sigils }))}
                 className="flex items-center gap-1.5 text-left"
               >
-                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'rgba(196,192,216,0.3)', transform: sectionsExpanded.sigils ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
+                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'var(--text-faint)', transform: sectionsExpanded.sigils ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
                 <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Sigils</span>
               </button>
               <button
@@ -710,9 +710,9 @@ export default function Sidebar({
                     <button
                       onClick={() => onNewChatWithSigil(sigil.id)}
                       className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
-                      style={{ paddingRight: '2rem', color: 'rgba(196,192,216,0.7)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
+                      style={{ paddingRight: '2rem', color: 'var(--text-secondary)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-overlay)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                     >
                       <span className="material-symbols-outlined shrink-0" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1", color: 'var(--accent)' }}>auto_fix_high</span>
                       <span className="text-[13px] truncate">{sigil.name}</span>
@@ -720,9 +720,9 @@ export default function Sidebar({
                     <button
                       onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSigilMenu({ x: rect.left - 8, y: rect.bottom + 4, sigilId: sigil.id }) }}
                       className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/sigil:opacity-100 transition-opacity"
-                      style={{ color: 'rgba(196,192,216,0.5)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
-                      onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+                      style={{ color: 'var(--text-secondary)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                      onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
                     </button>
@@ -739,7 +739,7 @@ export default function Sidebar({
                 onClick={() => setSectionsExpanded(prev => ({ ...prev, skills: !prev.skills }))}
                 className="flex items-center gap-1.5 text-left"
               >
-                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'rgba(196,192,216,0.3)', transform: sectionsExpanded.skills ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
+                <span className="material-symbols-outlined transition-transform" style={{ fontSize: '14px', color: 'var(--text-faint)', transform: sectionsExpanded.skills ? 'rotate(0deg)' : 'rotate(-90deg)' }}>expand_more</span>
                 <span className="text-[10px] font-semibold text-on-surface-variant/40 uppercase tracking-widest">Skills</span>
               </button>
               <button
@@ -779,9 +779,9 @@ export default function Sidebar({
                         <button
                           onClick={() => onNewChatWithSkill(skill.id)}
                           className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg text-left transition-all duration-150"
-                          style={{ paddingRight: '2rem', color: 'rgba(196,192,216,0.7)' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.color = '#d4d0e8' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.7)' }}
+                          style={{ paddingRight: '2rem', color: 'var(--text-secondary)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-overlay)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                         >
                           <span className="material-symbols-outlined shrink-0" style={{ fontSize: '15px', fontVariationSettings: "'FILL' 1", color: 'var(--accent)' }}>auto_awesome</span>
                           <span className="text-[13px] truncate">{skill.name}</span>
@@ -789,9 +789,9 @@ export default function Sidebar({
                         <button
                           onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSkillMenu({ x: rect.left - 8, y: rect.bottom + 4, skillId: skill.id }) }}
                           className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/skill:opacity-100 transition-opacity"
-                          style={{ color: 'rgba(196,192,216,0.5)' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = 'rgba(196,192,216,0.9)' }}
-                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'rgba(196,192,216,0.5)' }}
+                          style={{ color: 'var(--text-secondary)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                          onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
                         </button>
@@ -807,7 +807,7 @@ export default function Sidebar({
         </div>
 
         {/* Bottom nav */}
-        <div className="px-3 pb-3 pt-2 no-drag flex flex-col gap-0.5" style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+        <div className="px-3 pb-3 pt-2 no-drag flex flex-col gap-0.5" style={{ borderTop: '1px solid var(--border-subtle)' }}>
           {navItem('Library', 'collections_bookmark', 'library')}
           {navItem('Stats', 'bar_chart', 'stats')}
           {navItem('Settings', 'settings', 'settings')}
@@ -821,7 +821,7 @@ export default function Sidebar({
           <div className="fixed inset-0 z-40" onClick={() => setConvMenu(null)} />
           <div
             className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[160px]"
-            style={{ top: convMenu.y, left: convMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+            style={{ top: convMenu.y, left: convMenu.x, background: 'var(--bg-input)', border: '1px solid var(--border-mid)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
           >
             {(() => {
               const conv = [...conversations, ...projects.flatMap(p => p.conversations || [])].find(c => c.id === convMenu.convId)
@@ -850,7 +850,7 @@ export default function Sidebar({
                       Pin
                     </button>
                   )}
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />
+                  <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '2px 0' }} />
                   <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
                     onClick={() => { onDeleteConv(convMenu.convId); setConvMenu(null) }}>
                     <span className="material-symbols-outlined text-[16px]">delete</span>
@@ -869,7 +869,7 @@ export default function Sidebar({
           <div className="fixed inset-0 z-40" onClick={() => setProjectMenu(null)} />
           <div
             className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[170px]"
-            style={{ top: projectMenu.y, left: projectMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+            style={{ top: projectMenu.y, left: projectMenu.x, background: 'var(--bg-input)', border: '1px solid var(--border-mid)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
           >
             {(() => {
               const proj = projects.find(p => p.id === projectMenu.projectId)
@@ -890,7 +890,7 @@ export default function Sidebar({
                     <span className="material-symbols-outlined text-[16px] text-on-surface-variant">folder_open</span>
                     Set Directory
                   </button>
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)', margin: '2px 0' }} />
+                  <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '2px 0' }} />
                   <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
                     onClick={() => handleDeleteProject(projectMenu.projectId)}>
                     <span className="material-symbols-outlined text-[16px]">delete</span>
@@ -909,7 +909,7 @@ export default function Sidebar({
           <div className="fixed inset-0 z-40" onClick={() => setSigilMenu(null)} />
           <div
             className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[160px]"
-            style={{ top: sigilMenu.y, left: sigilMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+            style={{ top: sigilMenu.y, left: sigilMenu.x, background: 'var(--bg-input)', border: '1px solid var(--border-mid)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
           >
             <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
               onClick={() => { const s = sigils.find(x => x.id === sigilMenu.sigilId); setSigilModal({ sigil: s }); setSigilMenu(null) }}>
@@ -940,7 +940,7 @@ export default function Sidebar({
           <div className="fixed inset-0 z-40" onClick={() => setSkillMenu(null)} />
           <div
             className="fixed z-50 rounded-xl shadow-2xl py-1 min-w-[160px]"
-            style={{ top: skillMenu.y, left: skillMenu.x, background: '#1a1a26', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+            style={{ top: skillMenu.y, left: skillMenu.x, background: 'var(--bg-input)', border: '1px solid var(--border-mid)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
           >
             <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-on-surface hover:bg-white/5 transition-colors"
               onClick={() => { setSkillModal(skillMenu.skillId); setSkillMenu(null) }}>
