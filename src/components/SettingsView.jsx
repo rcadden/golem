@@ -121,6 +121,8 @@ const BLANK_WIZARD = {
 
 export default function SettingsView({
   models,
+  theme,
+  onThemeChange,
 }) {
   const [defaultModel, setDefaultModel] = useState('')
   const [ollamaUrl, setOllamaUrl] = useState('http://localhost:11434')
@@ -957,6 +959,33 @@ export default function SettingsView({
             <h3 className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Appearance</h3>
           </div>
           <div className={cardBody}>
+            {/* Theme toggle */}
+            <div className="mb-5">
+              <label className="block text-label-md text-on-surface-variant mb-3">Theme</label>
+              <div className="flex gap-2">
+                {[
+                  { value: 'dark',  label: 'Dark',  icon: 'dark_mode' },
+                  { value: 'light', label: 'Light', icon: 'light_mode' },
+                ].map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => onThemeChange?.(opt.value)}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-label-md font-medium transition-all"
+                    style={theme === opt.value
+                      ? { background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)', borderColor: 'rgba(var(--accent-rgb),0.35)' }
+                      : { background: 'var(--bg-card)', color: 'var(--text-secondary)', borderColor: 'var(--border-subtle)' }
+                    }
+                  >
+                    <span className="material-symbols-outlined text-[18px]"
+                      style={{ fontVariationSettings: "'FILL' 1" }}>
+                      {opt.icon}
+                    </span>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <label className="block text-label-md text-on-surface-variant mb-4">Accent color</label>
             <ColorPicker
               value={accentColor}
