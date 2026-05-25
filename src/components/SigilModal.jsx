@@ -28,7 +28,7 @@ export default function SigilModal({ sigil = null, onSave, onClose }) {
     >
       <div
         className="w-full max-w-lg rounded-2xl flex flex-col"
-        style={{ background: '#16161f', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
+        style={{ background: 'var(--bg-card)', border: '1px solid var(--border-mid)', boxShadow: '0 24px 80px rgba(0,0,0,0.6)' }}
       >
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-6 pb-4">
@@ -59,8 +59,8 @@ export default function SigilModal({ sigil = null, onSave, onClose }) {
               placeholder="e.g. Code Reviewer, Writing Coach…"
               className="w-full rounded-xl px-4 py-2.5 text-[14px] text-on-surface placeholder:text-on-surface-variant/40 outline-none transition-all"
               style={{
-                background: '#1a1a26',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-mid)',
               }}
               onFocus={e => e.target.style.borderColor = 'rgba(var(--accent-rgb),0.5)'}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}
@@ -76,8 +76,8 @@ export default function SigilModal({ sigil = null, onSave, onClose }) {
               rows={8}
               className="w-full rounded-xl px-4 py-3 text-[13px] text-on-surface placeholder:text-on-surface-variant/40 outline-none resize-none transition-all font-mono leading-relaxed"
               style={{
-                background: '#1a1a26',
-                border: '1px solid rgba(255,255,255,0.08)',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-mid)',
               }}
               onFocus={e => e.target.style.borderColor = 'rgba(var(--accent-rgb),0.5)'}
               onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.08)'}

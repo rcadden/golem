@@ -16,7 +16,7 @@ function fmtMs(ms) {
 function StatCard({ icon, label, value, sub }) {
   return (
     <div className="rounded-xl p-5 flex flex-col gap-1"
-      style={{ background: '#16161f', border: '1px solid rgba(255,255,255,0.06)' }}>
+      style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
       <div className="flex items-center gap-2 mb-2">
         <span className="material-symbols-outlined text-[18px] text-primary">{icon}</span>
         <span className="text-[12px] font-medium text-on-surface-variant/60 uppercase tracking-wider">{label}</span>
@@ -44,7 +44,7 @@ function BarChart({ data, valueKey = 'messages', label = 'messages' }) {
             {d[valueKey] > 0 && (
               <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
                 <div className="rounded-lg px-2 py-1 text-[11px] whitespace-nowrap"
-                  style={{ background: '#1a1a26', border: '1px solid rgba(255,255,255,0.1)' }}>
+                  style={{ background: 'var(--bg-input)', border: '1px solid var(--border-mid)' }}>
                   <div className="font-medium text-on-surface">{d[valueKey]} {label}</div>
                   <div className="text-on-surface-variant/60">{date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
                 </div>
@@ -56,7 +56,7 @@ function BarChart({ data, valueKey = 'messages', label = 'messages' }) {
                 height: `${height}%`,
                 background: isToday
                   ? 'linear-gradient(180deg, var(--accent-mid) 0%, var(--accent) 100%)'
-                  : d[valueKey] > 0 ? 'rgba(var(--accent-rgb),0.45)' : 'rgba(255,255,255,0.04)',
+                  : d[valueKey] > 0 ? 'rgba(var(--accent-rgb),0.45)' : 'var(--bg-overlay)',
                 minHeight: '3px',
               }}
             />
@@ -127,7 +127,7 @@ export default function StatsView() {
 
         {!hasData ? (
           <div className="rounded-xl p-12 flex flex-col items-center gap-3 text-center"
-            style={{ background: '#16161f', border: '1px solid rgba(255,255,255,0.06)' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
             <span className="material-symbols-outlined text-[48px] text-on-surface-variant/20">bar_chart</span>
             <div className="text-on-surface-variant/50 text-[15px]">No data yet — send some messages to see stats here.</div>
           </div>
@@ -151,13 +151,13 @@ export default function StatsView() {
 
             {/* Chart */}
             <div className="rounded-xl p-6"
-              style={{ background: '#16161f', border: '1px solid rgba(255,255,255,0.06)' }}>
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <div className="text-[14px] font-medium text-on-surface">Last 30 days</div>
                   <div className="text-[12px] text-on-surface-variant/50 mt-0.5">Hover bars for details</div>
                 </div>
-                <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="flex rounded-lg overflow-hidden" style={{ border: '1px solid var(--border-mid)' }}>
                   {[['messages', 'Messages'], ['tokens', 'Tokens']].map(([mode, lbl]) => (
                     <button key={mode} onClick={() => setChartMode(mode)}
                       className="px-3 py-1.5 text-[12px] font-medium transition-colors"
@@ -178,7 +178,7 @@ export default function StatsView() {
             {/* Top models */}
             {topModels.length > 0 && (
               <div className="rounded-xl p-6"
-                style={{ background: '#16161f', border: '1px solid rgba(255,255,255,0.06)' }}>
+                style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
                 <div className="text-[14px] font-medium text-on-surface mb-4">Models used</div>
                 <div className="flex flex-col gap-3">
                   {topModels.map(m => {
@@ -193,7 +193,7 @@ export default function StatsView() {
                           </div>
                         </div>
                         <div className="h-1.5 rounded-full overflow-hidden"
-                          style={{ background: 'rgba(255,255,255,0.06)' }}>
+                          style={{ background: 'var(--bg-input)' }}>
                           <div className="h-full rounded-full transition-all duration-500"
                             style={{ width: `${pct}%`, background: 'linear-gradient(90deg, var(--accent), var(--accent-mid))' }} />
                         </div>
