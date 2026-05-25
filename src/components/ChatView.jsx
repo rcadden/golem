@@ -440,7 +440,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
 
   // ── Active chat ──────────────────────────────────────────────────────────────
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: '#0f0f16' }}>
+    <div className="flex-1 flex flex-col h-full overflow-hidden" style={{ background: 'var(--bg-base)' }}>
       {/* Context badges */}
       {(conv.sigil_name || conv.project_id) && (
         <div className="flex items-center justify-center gap-2 pt-3 pb-0">
@@ -522,7 +522,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       </div>
 
       {/* Input area */}
-      <div className="shrink-0 px-6 pb-6" style={{ background: 'linear-gradient(to top, #0f0f16 80%, transparent)' }}>
+      <div className="shrink-0 px-6 pb-6" style={{ background: 'linear-gradient(to top, var(--bg-base) 80%, transparent)' }}>
         <div className="max-w-[860px] mx-auto">
           {/* Stream stats / live timer + context bar */}
           {(streaming || streamStats) && (() => {
@@ -564,12 +564,12 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                       </span>
                     )}
                     {streamStats?.numCtx && turnsLeft !== null && (
-                      <span className="text-[10px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                      <span className="text-[10px] tabular-nums" style={{ color: 'var(--text-faint)' }}>
                         ~{turnsLeft} turn{turnsLeft !== 1 ? 's' : ''} left
                       </span>
                     )}
                   </div>
-                  <span className="text-[11px] tabular-nums" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                  <span className="text-[11px] tabular-nums" style={{ color: 'var(--text-faint)' }}>
                     {streamStats
                       ? `${Math.round(streamStats.durationMs / 1000)}s · ${streamStats.completionTokens.toLocaleString()} tokens`
                       : `${elapsed}s`
@@ -581,7 +581,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                     className="flex items-center gap-2"
                     title={`Context: ${used.toLocaleString()} / ${numCtxVal.toLocaleString()} tokens (${Math.round(pct * 100)}%)`}
                   >
-                    <div className="flex-1 h-[2px] rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)' }}>
+                    <div className="flex-1 h-[2px] rounded-full overflow-hidden" style={{ background: 'var(--bg-input)' }}>
                       <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{ width: `${pct * 100}%`, background: barColor }}
@@ -622,8 +622,8 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
           <div
             className="rounded-2xl p-3 flex flex-col gap-2 transition-all duration-200"
             style={{
-              background: '#1a1a26',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-mid)',
               boxShadow: '0 0 0 0 rgba(var(--accent-rgb),0)',
             }}
             onFocusCapture={e => e.currentTarget.style.boxShadow = '0 0 0 2px rgba(var(--accent-rgb),0.35), 0 8px 32px rgba(var(--accent-rgb),0.08)'}
@@ -685,9 +685,9 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                   <span
                     className="px-2 py-0.5 rounded-full text-[10px] font-medium"
                     style={{
-                      background: 'rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      color: 'rgba(196,192,216,0.5)',
+                      background: 'var(--bg-overlay)',
+                      border: '1px solid var(--border-mid)',
+                      color: 'var(--text-secondary)',
                     }}
                     title="This model doesn't support tool calling — it can only respond with text"
                   >
@@ -710,7 +710,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                       <div className="fixed inset-0 z-10" onClick={() => setParamsOpen(false)} />
                       <div
                         className="absolute bottom-full right-0 mb-2 z-20 rounded-2xl shadow-2xl p-4 w-72"
-                        style={{ background: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)' }}
+                        style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-mid)' }}
                       >
                         <div className="flex items-center justify-between mb-4">
                           <span className="text-label-sm font-semibold text-on-surface">Conversation parameters</span>
