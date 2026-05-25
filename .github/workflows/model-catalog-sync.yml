@@ -1,0 +1,85 @@
+name: Model Catalog Sync
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9am UTC
+  workflow_dispatch:       # Manual trigger for testing
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for new Ollama models
+        id: check
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs')
+
+            // Fetch the Ollama library page
+            const res = await fetch('https://ollama.com/library')
+            const html = await res.text()
+
+            // Extract model slugs from href="/library/<slug>" links
+            const matches = [...html.matchAll(/href="\/library\/([a-z0-9][a-z0-9._-]*)"/g)]
+            const found = [...new Set(matches.map(m => m[1]))]
+              .filter(s => !['search', 'tag', 'trending'].includes(s))
+
+            // Load our known baseline
+            const known = JSON.parse(fs.readFileSync('scripts/known-ollama-models.json', 'utf8'))
+            const knownSet = new Set(known)
+
+            // Find new slugs
+            const newModels = found.filter(s => !knownSet.has(s))
+
+            if (newModels.length === 0) {
+              console.log('No new models detected.')
+              core.setOutput('has_new', 'false')
+              return
+            }
+
+            console.log('New models found:', newModels)
+            core.setOutput('has_new', 'true')
+            core.setOutput('new_models', newModels.join(', '))
+
+      - name: Open issue if new models found
+        if: steps.check.outputs.has_new == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const newModels = '${{ steps.check.outputs.new_models }}'
+            const lines = newModels.split(', ').map(s => `- [ ] \`${s}\` — https://ollama.com/library/${s}`).join('\n')
+
+            // Check if an open issue already exists to avoid duplicates
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'model-catalog',
+            })
+
+            const existing = issues.data.find(i => i.title.startsWith('New Ollama models detected'))
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `**Weekly check — new models:**\n${lines}`,
+              })
+              console.log(`Commented on existing issue #${existing.number}`)
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: 'New Ollama models detected — catalog update needed',
+                labels: ['model-catalog'],
+                body: `The weekly Ollama library scan found models not yet in \`scripts/known-ollama-models.json\`.\n\nAdd them to the catalog or mark them as evaluated in the baseline.\n\n## New models\n${lines}\n\nWhat to do\n1. For each model above: check if it belongs in the Golem catalog\n2. If yes: add to \`src/data/models-catalog.js\`\n3. Either way: add the slug to \`scripts/known-ollama-models.json\` to silence future alerts\n4. Commit and close this issue`,
+              })
+              console.log('Created new issue.')
+            }
