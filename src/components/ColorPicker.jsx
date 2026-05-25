@@ -224,7 +224,7 @@ export default function ColorPicker({ value = '#6366f1', onChange }) {
             key={m}
             onClick={() => setMode(m)}
             className="flex items-center gap-1.5 text-[12px] font-medium transition-colors"
-            style={{ color: mode===m ? 'var(--accent-light)' : 'rgba(196,192,216,0.45)' }}
+            style={{ color: mode===m ? 'var(--accent-light)' : 'var(--text-muted)' }}
           >
             <div
               className="w-3.5 h-3.5 rounded-full border flex items-center justify-center shrink-0"
@@ -272,14 +272,14 @@ export default function ColorPicker({ value = '#6366f1', onChange }) {
 
       {/* Hex + color string */}
       <div className="flex items-center gap-3">
-        <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div className="flex items-center gap-1.5 rounded-lg px-3 py-1.5" style={{ background: 'var(--bg-card-hover)', border: '1px solid var(--border-subtle)' }}>
           <input
             value={hexInput}
             onChange={handleHexInput}
             className="bg-transparent outline-none text-[13px] font-mono text-on-surface w-[72px]"
             spellCheck={false}
           />
-          <button onClick={copyHex} className="transition-colors" style={{ color: copied ? 'var(--accent-light)' : 'rgba(196,192,216,0.4)' }}>
+          <button onClick={copyHex} className="transition-colors" style={{ color: copied ? 'var(--accent-light)' : 'var(--text-muted)' }}>
             <span className="material-symbols-outlined" style={{ fontSize: '14px' }}>{copied ? 'check' : 'content_copy'}</span>
           </button>
         </div>

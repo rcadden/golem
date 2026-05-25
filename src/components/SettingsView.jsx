@@ -902,9 +902,9 @@ export default function SettingsView({
                 <div
                   className="flex-1 px-3 py-2 rounded-lg text-[12px] font-mono truncate"
                   style={{
-                    background: 'rgba(255,255,255,0.04)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    color: memoryPath ? 'rgba(196,192,216,0.8)' : 'rgba(196,192,216,0.35)'
+                    background: 'var(--bg-overlay)',
+                    border: '1px solid var(--border-subtle)',
+                    color: memoryPath ? 'var(--text-secondary)' : 'var(--text-faint)'
                   }}
                   title={memoryPath || undefined}
                 >
@@ -923,9 +923,9 @@ export default function SettingsView({
                   <button
                     onClick={handleMemoryPathClear}
                     className="p-2 rounded-lg transition-colors shrink-0"
-                    style={{ color: 'rgba(196,192,216,0.4)' }}
+                    style={{ color: 'var(--text-muted)' }}
                     onMouseEnter={e => { e.currentTarget.style.color = 'rgba(220,80,80,0.8)' }}
-                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,192,216,0.4)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)' }}
                     title="Reset to default path"
                   >
                     <span className="material-symbols-outlined text-[16px]">close</span>
@@ -933,7 +933,7 @@ export default function SettingsView({
                 )}
               </div>
               {memoryPath && (
-                <p className="mt-1.5 text-[11px]" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                <p className="mt-1.5 text-[11px]" style={{ color: 'var(--text-faint)' }}>
                   Changes saved directly to this file. Shared with other apps that read the same file.
                 </p>
               )}

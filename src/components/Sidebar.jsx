@@ -268,7 +268,7 @@ export default function Sidebar({
               onClick={e => openConvMenu(e, conv.id)}
               className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/conv:opacity-100 transition-opacity"
               style={{ color: 'var(--text-secondary)' }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-input)'; e.currentTarget.style.color = 'var(--text-primary)' }}
               onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
             >
               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
@@ -496,7 +496,7 @@ export default function Sidebar({
                               onClick={e => openProjectMenu(e, project.id)}
                               className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/proj:opacity-100 transition-opacity"
                               style={{ color: 'var(--text-secondary)' }}
-                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                              onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-input)'; e.currentTarget.style.color = 'var(--text-primary)' }}
                               onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                             >
                               <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
@@ -721,7 +721,7 @@ export default function Sidebar({
                       onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSigilMenu({ x: rect.left - 8, y: rect.bottom + 4, sigilId: sigil.id }) }}
                       className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/sigil:opacity-100 transition-opacity"
                       style={{ color: 'var(--text-secondary)' }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-input)'; e.currentTarget.style.color = 'var(--text-primary)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                     >
                       <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
@@ -790,7 +790,7 @@ export default function Sidebar({
                           onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); setSkillMenu({ x: rect.left - 8, y: rect.bottom + 4, skillId: skill.id }) }}
                           className="absolute right-1 top-1/2 -translate-y-1/2 w-6 h-6 rounded flex items-center justify-center opacity-0 group-hover/skill:opacity-100 transition-opacity"
                           style={{ color: 'var(--text-secondary)' }}
-                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--scrollbar-thumb)'; e.currentTarget.style.color = 'var(--text-primary)' }}
+                          onMouseEnter={e => { e.currentTarget.style.background = 'var(--bg-input)'; e.currentTarget.style.color = 'var(--text-primary)' }}
                           onMouseLeave={e => { e.currentTarget.style.background = ''; e.currentTarget.style.color = 'var(--text-secondary)' }}
                         >
                           <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>more_horiz</span>
