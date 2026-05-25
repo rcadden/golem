@@ -1003,7 +1003,7 @@ export default function SettingsView({
               </div>
               <div>
                 <div className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Golem</div>
-                <div className="text-body-md text-on-surface-variant text-sm">Version 0.8.1</div>
+                <div className="text-body-md text-on-surface-variant text-sm">Version 0.9.0</div>
               </div>
             </div>
           </div>

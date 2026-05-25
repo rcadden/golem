@@ -4,6 +4,20 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.9.0] — 2026-05-25
+
+### Added
+- Light/dark theme toggle in Settings → Appearance; dark remains default
+- Model Library: 13 new models added (Gemma3, Gemma4, Qwen3, Qwen3-Coder, Llama3.3, Llama4, DeepSeek Coder V2, QwQ, Devstral, Magistral, Phi4-Mini, Qwen2.5VL, MiniCPM-V)
+- Model Library: tool-support badge and filter (All / Supports Tools / No Tools)
+- Model Library: deprecated model toggle — hides superseded models by default
+- System tray icon: closing the window minimizes to tray instead of quitting
+- Global hotkey (default Alt+G) to show/hide window from anywhere, configurable in Settings → System
+- Settings → Personal Memory: browse button to point memory at any file path (e.g., shared Agent_Memory)
+- GitHub Action: weekly automated scan of ollama.com/library — opens issue when new models are detected
+
+---
+
 ## [0.8.1] — 2026-05-24
 
 ### Fixed
