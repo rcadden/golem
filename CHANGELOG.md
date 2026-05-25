@@ -4,6 +4,13 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.9.1] — 2026-05-25
+
+### Fixed
+- Auto-updater now shows download progress (percentage) in the title bar chip while downloading, and surfaces a red "Update failed" chip if the download errors — previously all feedback was silent, making the update appear stuck
+
+---
+
 ## [0.9.0] — 2026-05-25
 
 ### Added
