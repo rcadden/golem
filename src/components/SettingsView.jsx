@@ -128,6 +128,7 @@ export default function SettingsView({
   const [launchAtStartup, setLaunchAtStartup] = useState(false)
   const [accentColor, setAccentColor] = useState('#6366f1')
   const [numCtx, setNumCtxState] = useState(16384)
+  const [memoryPath, setMemoryPath] = useState(null)  // null = using default path
   const [saved, setSaved] = useState(false)
   const [testStatus, setTestStatus] = useState('')
 
@@ -162,6 +163,8 @@ export default function SettingsView({
         setLaunchAtStartup(loginEnabled)
         setAccentColor(accent)
         setNumCtxState(parseInt(savedNumCtx) || 16384)
+        const customPath = await api.memory.getPath()
+        setMemoryPath(customPath)
       } catch (err) {
         console.error('[Settings] load failed:', err)
       }
@@ -212,6 +215,23 @@ export default function SettingsView({
     ].filter(Boolean))
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  async function handleMemoryPathBrowse() {
+    const chosen = await api.memory.browsePath()
+    if (!chosen) return
+    await api.memory.setPath(chosen)
+    setMemoryPath(chosen)
+    const content = await api.memory.load()
+    setMemory(content)
+    memoryLoaded.current = true
+  }
+
+  async function handleMemoryPathClear() {
+    await api.memory.setPath('')
+    setMemoryPath(null)
+    const content = await api.memory.load()
+    setMemory(content)
   }
 
   async function handleTestConnection() {
@@ -798,6 +818,50 @@ export default function SettingsView({
             <h3 className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Personal Memory</h3>
           </div>
           <div className={cardBody}>
+            {/* File path row */}
+            <div className="mb-4">
+              <label className="block text-label-md text-on-surface-variant mb-2">Memory file location</label>
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex-1 px-3 py-2 rounded-lg text-[12px] font-mono truncate"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    color: memoryPath ? 'rgba(196,192,216,0.8)' : 'rgba(196,192,216,0.35)'
+                  }}
+                  title={memoryPath || undefined}
+                >
+                  {memoryPath || 'Default (userData/memory.txt)'}
+                </div>
+                <button
+                  onClick={handleMemoryPathBrowse}
+                  className="px-3 py-2 rounded-lg text-label-sm transition-colors shrink-0"
+                  style={{ background: 'rgba(var(--accent-rgb),0.12)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.25)' }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.2)' }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'rgba(var(--accent-rgb),0.12)' }}
+                >
+                  Browse
+                </button>
+                {memoryPath && (
+                  <button
+                    onClick={handleMemoryPathClear}
+                    className="p-2 rounded-lg transition-colors shrink-0"
+                    style={{ color: 'rgba(196,192,216,0.4)' }}
+                    onMouseEnter={e => { e.currentTarget.style.color = 'rgba(220,80,80,0.8)' }}
+                    onMouseLeave={e => { e.currentTarget.style.color = 'rgba(196,192,216,0.4)' }}
+                    title="Reset to default path"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                )}
+              </div>
+              {memoryPath && (
+                <p className="mt-1.5 text-[11px]" style={{ color: 'rgba(196,192,216,0.35)' }}>
+                  Changes saved directly to this file. Shared with other apps that read the same file.
+                </p>
+              )}
+            </div>
+
             <label className="block text-label-md text-on-surface-variant mb-2">
               Injected as context into every conversation
             </label>
