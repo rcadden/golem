@@ -75,16 +75,15 @@ _Make Golem approachable for someone who's never run a local model._
 
 ---
 
-## Sprint 6 — Providers
-_Extend the provider surface without diluting the local-first identity._
+## Sprint 6 — Model Library & Discovery (v0.9.0) ✓
+_Keep the local model experience current and informed._
 
-> Design constraint: Ollama remains default and first-class. Cloud providers are opt-in, hidden in Advanced Settings. The README's "no cloud" promise becomes: *"Ollama by default. Cloud providers available as opt-in with your own API keys — no Golem accounts or subscriptions required."*
-
-- [ ] **Provider interface** — define `{ streamChat(messages, options), listModels() }`; Ollama becomes the first adapter · RICE: 8·4·0.7·4 = 5.6
-- [ ] **OpenAI adapter** — GPT-4o, o3-mini; API key stored via Electron `safeStorage` · RICE: 7·3·0.7·3 = 4.9
-- [ ] **Anthropic adapter** — Claude 3.5+; same safeStorage pattern · RICE: 7·3·0.7·3 = 4.9
-- [ ] **Gemini adapter** — Gemini 1.5 Pro/Flash · RICE: 5·2·0.7·3 = 2.3
-- [ ] **Advanced Settings section** — provider management UI; keys never displayed after entry; clear "local vs cloud" visual separation
+- [x] **Model catalog refresh** — added Gemma 3/4, Qwen 3/3-Coder, Llama 3.3/4, DeepSeek Coder V2, QwQ, Devstral, Magistral, Phi 4 Mini, Qwen2.5-VL, MiniCPM-V; CodeLlama, Phi 3.5, StarCoder 2 marked deprecated
+- [x] **Tool support indicator in model library** — teal "Tools" badge on supported model cards; filter chips (All / Supports Tools / No Tools); deprecated model toggle (Show/Hide legacy)
+- [x] **Automated model catalog sync** — GitHub Action (weekly cron) scrapes `ollama.com/library`, diffs against `scripts/known-ollama-models.json`, opens repo issue when new models detected
+- [x] **User-configurable memory file path** — path display + Browse button + × reset in Settings → Personal Memory; reloads textarea from new file on selection
+- [x] **Light mode toggle** — full CSS variable token system; dark/light selector in Settings → Appearance; all components themed; preference persisted
+- [x] **Windows tray icon + global hotkey** — minimize-to-tray on close; Alt+G global show/hide; both configurable in Settings → System
 
 ---
 
@@ -93,6 +92,8 @@ _No commitment. Parking lot for evaluated ideas._
 
 | Idea | Notes |
 |------|-------|
+| **Light mode toggle** | Promoted to Sprint 6. |
+| **User-configurable memory file path** | Promoted to Sprint 6. |
 | `docs/BRANCHING.md` | Document branching strategy and PR rules — worth writing once contribution patterns are established |
 | `SECURITY.md` | Vulnerability reporting policy — add if/when the project grows a contributor base |
 | Multi-modal image attachments | Blocked on local model support — revisit when vision models are common |
@@ -100,7 +101,7 @@ _No commitment. Parking lot for evaluated ideas._
 | Artifacts side panel | Deferred from Sprint 3 · RICE: 5·3·0.5·5 = 1.5 |
 | Conversation branching | Fork from any message · RICE: 4·2·0.5·4 = 1.0 |
 | Encrypted conversation storage | Low demand until user base grows |
-| Windows tray icon + global hotkey | Quality-of-life; Sprint 4 candidate if demand appears |
+| **Windows tray icon + global hotkey** | Promoted to Sprint 6. |
 
 ### Small-Model Optimizations (SmallCode-inspired)
 Evaluated against [SmallCode](https://github.com/Doorman11991/smallcode) — a terminal coding agent built specifically for 8B-35B models on consumer hardware. Its techniques aren't relevant to Golem's current chat-first design, but become worthwhile if Golem ever gets a sustained developer workspace (multi-file, multi-turn agentic editing). Techniques to revisit at that point:
@@ -110,6 +111,7 @@ Evaluated against [SmallCode](https://github.com/Doorman11991/smallcode) — a t
 - **Forgiving tool-call parser** — regex-recover malformed JSON tool calls rather than hard-failing
 
 ### Evaluated and Rejected
+- **Cloud provider adapters (OpenAI, Anthropic, Gemini) + provider interface + Advanced Settings** — contradicts the local-first identity; not worth the maintenance surface.
 - **RAG / Document Q&A** — would make Golem compete with AnythingLLM; existing file-context + filesystem tools cover 70% of the value. Not our fight.
 - **Visual workflow / agent builder** — that's Dify's identity. Skills are the right abstraction boundary for Golem.
 - **Multi-model parallel chat** — violates the "one model at a time" design principle.
