@@ -126,9 +126,13 @@ contextBridge.exposeInMainWorld('golem', {
   },
   updater: {
     onAvailable:    (cb) => ipcRenderer.on('updater:available',  (_, info) => cb(info)),
+    onProgress:     (cb) => ipcRenderer.on('updater:progress',   (_, data) => cb(data)),
     onDownloaded:   (cb) => ipcRenderer.on('updater:downloaded', ()        => cb()),
+    onError:        (cb) => ipcRenderer.on('updater:error',      (_, msg)  => cb(msg)),
     offAvailable:   ()   => ipcRenderer.removeAllListeners('updater:available'),
+    offProgress:    ()   => ipcRenderer.removeAllListeners('updater:progress'),
     offDownloaded:  ()   => ipcRenderer.removeAllListeners('updater:downloaded'),
+    offError:       ()   => ipcRenderer.removeAllListeners('updater:error'),
     install:        ()   => ipcRenderer.send('updater:install'),
   },
 })

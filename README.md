@@ -4,74 +4,104 @@ A fast, private, local-first AI chat desktop application powered by [Ollama](htt
 
 ---
 
-## Core Features
+## Features
 
-- 💬 **Local Chat Streaming** — Real-time offline streaming from your local Ollama models.
-- 📁 **Projects** — Group conversations in folders and automatically inject local file contexts into all chats within that project.
-- 🔮 **Sigils** — Named system prompt presets (personas) to instantly spin up scoped chats. Includes a built-in Sigil Architect to guide creation.
-- 🧰 **Skills** — Workflow templates that shape what you're doing (code review, debugging, brainstorming, etc.). Includes a built-in Skill Architect.
-- 🎨 **Dynamic Accent Themes** — HSL/HWB/RGB/HSV slider color picker in Settings that instantly updates the cinema-dark theme.
-- 📎 **File Attachments** — Attach code or text files directly to your messages.
-- 📊 **Telemetry Stats** — Interactive telemetry dashboard showing 30-day token counts, message volume, and latency.
-- 🔍 **Real-time Search** — Instant filtering of conversations in the sidebar.
-- 📌 **Pin Conversations** — Keep your most important chats at the top of the sidebar.
-- 💾 **Export as Markdown** — Download your chat history to a clean markdown document.
-- 🔄 **Auto-Updates** — Golem checks for new GitHub releases on launch and every 4 hours. Updates download silently and prompt for a one-click restart.
+### Chat & Conversations
+- **Local Chat Streaming** — Real-time offline streaming from any Ollama model
+- **File Attachments** — Attach code or text files directly to messages
+- **Message Editing** — Edit any sent message; downstream responses are cleared and regenerated
+- **Retry / Regenerate** — Re-stream the last assistant response with one click
+- **Auto-Title** — Model generates a 4–6 word title after the first exchange
+- **Draft Persistence** — Unsent input is saved per conversation and restored on revisit
+- **Export as Markdown** — Download chat history as a clean markdown file
+- **Pin Conversations** — Float important chats above the recent list
+- **Full-text Search** — Search across all conversation titles and message content
+
+### Organization
+- **Projects** — Group conversations in folders; inject local file context into every chat in the project
+- **Sigils** — Named system prompt presets (personas) for instantly scoped chats; built-in Sigil Architect to create new ones
+- **Skills** — Workflow templates (code review, debugging, brainstorming, etc.); built-in Skill Architect; 18-skill starter pack
+
+### Model Management
+- **Model Library** — Curated catalog of 30 model families with descriptions, use-case tags, context length, and VRAM requirements; hardware-aware tier badges (Runs great / Might be OK / Not a chance)
+- **Tool Support Indicator** — Teal badge and filter chip for models that support function calling
+- **Deprecated Model Toggle** — Hide superseded models (CodeLlama → Devstral, Phi3.5 → Phi4-Mini, etc.) by default
+- **Ollama Install Flow** — Detects missing Ollama on first launch; one-click install, progress tracking, and auto-continue
+- **Installed Models Tab** — Pull and delete models directly from the Library view
+
+### Intelligence & Tooling
+- **MCP Client** — Connect external MCP servers (stdio); tools discovered at connect time; per-project server association
+- **Hardware Panel** — RAM, CPU, GPU, and VRAM detection; per-model traffic-light compatibility indicators in Settings
+- **Session Health** — Context fill %, estimated turns remaining, and GPU/CPU mode badge above the input area
+- **Model Parameters** — Per-conversation temperature and context window size sliders
+
+### Customization & UX
+- **Light / Dark Theme** — Toggle in Settings → Appearance; preference persisted
+- **Dynamic Accent Color** — HSL/HWB/RGB/HSV color picker; accent updates instantly across the UI
+- **System Tray** — Closing the window minimizes to tray; global hotkey (default `Alt+G`) to show/hide from anywhere
+- **Configurable Memory File** — Point Personal Memory at any file path (e.g., a shared `agent_memory.md`) via a browse button in Settings
+- **Zen Mode** — Collapsible sidebar via title bar toggle or `Ctrl+B`
+- **Keyboard Shortcuts** — `Ctrl+N` new chat · `Ctrl+B` toggle sidebar · `Ctrl+/` focus search · `Escape` cancel stream
+- **Telemetry Dashboard** — 30-day token counts, message volume, and latency chart
+
+### Reliability
+- **Auto-Updates** — Checks for new GitHub releases on launch; downloads silently; progress shown in title bar; prompts for one-click restart
+- **MCP Auto-Reconnect** — Exponential backoff reconnect (1s/2s/4s, max 3 attempts) on transport crash
+
+---
 
 ## System Requirements
 
-- **OS:** Windows 10 or Windows 11 (x64) · macOS 12+ · Linux (x64)
-- **Node.js:** v18.0.0 or higher
-- **Ollama:** Installed and running locally (`ollama serve`)
-- **Models:** At least one model pulled (e.g. `ollama pull qwen2.5-coder:7b`)
+- **OS:** Windows 10 / 11 (x64) · macOS 12+ · Linux (x64)
+- **Ollama:** Installed and running. Golem will prompt to install it if missing.
+- **RAM:** 8 GB minimum; 16 GB recommended for larger models
 
-> **Note:** macOS (DMG) and Linux (AppImage) builds are available but have not been tested on real hardware by the developer. Windows is the primary supported platform. Reports of macOS/Linux issues are welcome.
+> **Note:** macOS (DMG) and Linux (AppImage) builds are available but have not been tested on real hardware by the developer. Windows is the primary supported platform.
 
-## Setup
+---
+
+## Setup (Development)
 
 ```bash
-# Clone the repository
 git clone https://github.com/rcadden/golem.git
 cd golem
-
-# Install dependencies
 npm install
-
-# Run in development mode (with Hot Module Replacement)
 npm run dev
 ```
 
-## Development Commands
+### Development Commands
 
 | Command | Action |
 |---|---|
-| `npm run dev` | Runs the Vite dev server and launches Electron with live hot reloading |
-| `npm run build` | Compiles the React UI and builds the NSIS production installer (`.exe`) |
-| `npm run release` | Compiles, builds the installer, and opens the output distribution folder |
-| `npm run pack` | Creates an unpacked executable directory (fast sanity check) |
+| `npm run dev` | Vite dev server + Electron with live hot reloading |
+| `npm run build` | Build the production NSIS installer |
+| `npm run release` | Build installer and open the output folder |
+| `npm run pack` | Unpacked executable only — fast sanity check |
 
-## Data & Database
+---
 
-All configuration and conversation history is persisted locally using **SQLite** via `sql.js` (WASM):
-- **Development Database:** `data/soren.db` (gitignored, in the project root)
-- **Production Database:** `%APPDATA%/golem/` (electron userData path)
-- **Memory Context:** `data/memory.txt` (local static memory injected as system prompt context)
+## Data & Storage
 
-## Publishing a Release (Auto-Update)
+All data is stored locally:
 
-Golem uses `electron-updater` with GitHub Releases as the update feed. To ship an update that users receive automatically:
+| Location | Contents |
+|---|---|
+| `%APPDATA%/golem/` | SQLite database, settings, memory file (production) |
+| `data/` | SQLite database (development, gitignored) |
 
-```bash
-# 1. Bump the version in package.json and src/components/SettingsView.jsx
-# 2. Build and publish (requires GH_TOKEN env var with repo write access)
-GH_TOKEN=your_token npm run build -- --publish always
-```
+The Personal Memory file defaults to `%APPDATA%/golem/memory.txt` but can be pointed at any path in Settings → Personal Memory.
 
-`electron-builder` will upload the installer and `latest.yml` feed file to the GitHub release. Installed copies of Golem will detect it within 4 hours.
+---
+
+## Releasing
+
+Use the `/build` slash command in Claude Code — it handles version bump (both `package.json` and `SettingsView.jsx`), CHANGELOG entry, build, commit, annotated tag, push, and GitHub release upload.
+
+---
 
 ## Prompt Library Attribution
 
-The starter pack of sigils and skills bundled with Golem (`electron/seeds/starter-pack.js`) includes templates inspired by **[Anthropic's Claude Prompt Library](https://docs.anthropic.com/en/resources/prompt-library/library)**. The following skills draw on Anthropic's published examples:
+The starter pack of sigils and skills bundled with Golem (`electron/seeds/starter-pack.js`) includes templates inspired by **[Anthropic's Claude Prompt Library](https://docs.anthropic.com/en/resources/prompt-library/library)**:
 
 | Golem Skill | Inspired by |
 |---|---|
@@ -84,9 +114,7 @@ The starter pack of sigils and skills bundled with Golem (`electron/seeds/starte
 | Flashcard Creator | *Study buddy* |
 | Meeting Notes | *Meeting scribe* |
 
-These are adapted for use with local models (model-agnostic, no Claude-specific references) and are not direct copies of Anthropic's text. Credit and thanks to the Anthropic team for the original prompt designs.
-
-The following skills are adapted from the **[Claude Code](https://claude.ai/code)** superpowers skill system, translated from agentic coding workflows into conversational frameworks:
+The following skills are adapted from the **[Claude Code](https://claude.ai/code)** superpowers system:
 
 | Golem Skill | Inspired by |
 |---|---|
@@ -94,11 +122,13 @@ The following skills are adapted from the **[Claude Code](https://claude.ai/code
 | Project Planner | `superpowers:writing-plans` |
 | TDD Coach | `superpowers:test-driven-development` |
 | Code Review Responder | `superpowers:receiving-code-review` |
-| Pre-PR Checklist | `superpowers:verification-before-completion` + `superpowers:requesting-code-review` |
+| Pre-PR Checklist | `superpowers:verification-before-completion` |
 | Branch Completion | `superpowers:finishing-a-development-branch` |
 | Brainstorming Partner | `superpowers:brainstorming` |
 
 The **Sigil Architect**, **Skill Architect**, **Code Reviewer**, **Commit Message Writer**, and **Email Drafter** skills are original to Golem.
+
+---
 
 ## License
 

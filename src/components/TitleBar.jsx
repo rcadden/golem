@@ -14,18 +14,24 @@ export default function TitleBar({
   const [isMaximized, setIsMaximized] = useState(false)
   const [updateAvailable, setUpdateAvailable] = useState(null)   // { version } | null
   const [updateReady, setUpdateReady]     = useState(false)
+  const [updateProgress, setUpdateProgress] = useState(null)    // 0-100 | null
+  const [updateError, setUpdateError]     = useState(null)
   const [platform, setPlatform] = useState('win32')
 
   useEffect(() => {
     api.window.isMaximized().then(setIsMaximized)
     api.window.onMaximizeChange(setIsMaximized)
-    api.updater.onAvailable(info => setUpdateAvailable(info))
-    api.updater.onDownloaded(() => setUpdateReady(true))
+    api.updater.onAvailable(info => { setUpdateAvailable(info); setUpdateError(null) })
+    api.updater.onProgress(data => setUpdateProgress(data.percent))
+    api.updater.onDownloaded(() => { setUpdateReady(true); setUpdateProgress(null) })
+    api.updater.onError(() => { setUpdateProgress(null); setUpdateError(true) })
     api.system.platform().then(setPlatform)
     return () => {
       api.window.offMaximizeChange()
       api.updater.offAvailable()
+      api.updater.offProgress()
       api.updater.offDownloaded()
+      api.updater.offError()
     }
   }, [])
 
@@ -77,19 +83,30 @@ export default function TitleBar({
           </div>
         )}
 
-        {/* Update available — downloading */}
+        {/* Update available — downloading or error */}
         {updateAvailable && !updateReady && (
           <div
             className="flex items-center gap-1.5 px-3 py-0.5 rounded-full text-[10px]"
-            style={{
-              background: 'rgba(80,200,120,0.10)',
-              border: '1px solid rgba(80,200,120,0.25)',
-              color: 'rgb(120,210,150)',
-            }}
-            title={`Golem ${updateAvailable.version} is downloading in the background`}
+            style={updateError
+              ? { background: 'rgba(239,68,68,0.10)', border: '1px solid rgba(239,68,68,0.25)', color: 'rgb(248,113,113)' }
+              : { background: 'rgba(80,200,120,0.10)', border: '1px solid rgba(80,200,120,0.25)', color: 'rgb(120,210,150)' }
+            }
+            title={updateError
+              ? `Update failed — install manually from github.com/rcadden/golem/releases`
+              : `Golem ${updateAvailable.version} is downloading`
+            }
           >
-            <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>downloading</span>
-            <span>v{updateAvailable.version} downloading…</span>
+            {updateError ? (
+              <>
+                <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>error</span>
+                <span>Update failed</span>
+              </>
+            ) : (
+              <>
+                <span className="material-symbols-outlined animate-spin" style={{ fontSize: '12px' }}>downloading</span>
+                <span>v{updateAvailable.version}{updateProgress !== null ? ` · ${updateProgress}%` : ' downloading…'}</span>
+              </>
+            )}
           </div>
         )}
 

@@ -80,16 +80,26 @@ function setupAutoUpdater() {
     mainWindow?.webContents.send('updater:available', { version: info.version })
   })
 
+  autoUpdater.on('download-progress', progress => {
+    mainWindow?.webContents.send('updater:progress', {
+      percent: Math.round(progress.percent),
+      transferred: progress.transferred,
+      total: progress.total,
+    })
+  })
+
   autoUpdater.on('update-downloaded', () => {
     mainWindow?.webContents.send('updater:downloaded')
   })
 
   autoUpdater.on('error', err => {
-    // Silent in production — update failures shouldn't interrupt the user
     console.error('[updater]', err?.message ?? err)
+    mainWindow?.webContents.send('updater:error', err?.message ?? String(err))
   })
 
-  autoUpdater.checkForUpdates().catch(() => {})
+  autoUpdater.checkForUpdates().catch(err => {
+    console.error('[updater] checkForUpdates failed:', err?.message ?? err)
+  })
 }
 
 ipcMain.on('updater:install', () => {
