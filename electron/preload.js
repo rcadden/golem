@@ -46,8 +46,11 @@ contextBridge.exposeInMainWorld('golem', {
     searchMessages:           (query)      => ipcRenderer.invoke('db:searchMessages', query),
   },
   memory: {
-    load: ()        => ipcRenderer.invoke('memory:load'),
-    save: (content) => ipcRenderer.invoke('memory:save', content),
+    load:       ()           => ipcRenderer.invoke('memory:load'),
+    save:       (content)    => ipcRenderer.invoke('memory:save', content),
+    getPath:    ()           => ipcRenderer.invoke('memory:getPath'),
+    setPath:    (filePath)   => ipcRenderer.invoke('memory:setPath', filePath),
+    browsePath: ()           => ipcRenderer.invoke('memory:browsePath'),
   },
   dialog: {
     openFile:      ()     => ipcRenderer.invoke('dialog:openFile'),
@@ -57,6 +60,11 @@ contextBridge.exposeInMainWorld('golem', {
   application: {
     getLoginItemEnabled: ()       => ipcRenderer.invoke('app:getLoginItemEnabled'),
     setLoginItem:        (enable) => ipcRenderer.invoke('app:setLoginItem', enable),
+  },
+  tray: {
+    getConfig:  ()              => ipcRenderer.invoke('tray:getConfig'),
+    setEnabled: (enabled)       => ipcRenderer.invoke('tray:setEnabled', enabled),
+    setHotkey:  (accelerator)   => ipcRenderer.invoke('tray:setHotkey', accelerator),
   },
   ollama: {
     listModels:      ()        => ipcRenderer.invoke('ollama:listModels'),

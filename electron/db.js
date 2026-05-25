@@ -565,12 +565,19 @@ function removeProjectMcpServer(projectId, serverId) {
   run('DELETE FROM mcp_server_projects WHERE mcp_server_id = ? AND project_id = ?', [serverId, projectId])
 }
 
+function getMemoryPath() {
+  const custom = getSetting('memory_path', '')
+  return custom && custom.trim() ? custom.trim() : MEMORY_PATH
+}
+
 function loadMemory() {
-  try { return fs.readFileSync(MEMORY_PATH, 'utf8').trim() } catch { return '' }
+  try { return fs.readFileSync(getMemoryPath(), 'utf8').trim() } catch { return '' }
 }
 
 function saveMemory(content) {
-  fs.writeFileSync(MEMORY_PATH, content, 'utf8')
+  const p = getMemoryPath()
+  fs.mkdirSync(path.dirname(p), { recursive: true })
+  fs.writeFileSync(p, content, 'utf8')
 }
 
 // ── Search ────────────────────────────────────────────────────────────────────
@@ -603,7 +610,7 @@ module.exports = {
   listSkills, getSkill, createSkill, updateSkill, deleteSkill,
   getSetting, setSetting,
   getDraft, saveDraft,
-  loadMemory, saveMemory,
+  getMemoryPath, loadMemory, saveMemory,
   listMcpServers, getMcpServer, createMcpServer, updateMcpServer, deleteMcpServer, setMcpServerEnabled,
   getProjectMcpServers, addProjectMcpServer, removeProjectMcpServer,
   searchMessages,

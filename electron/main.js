@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, globalShortcut } = require('electron')
 const path = require('path')
 const http = require('http')
 const https = require('https')
@@ -15,11 +15,17 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 let mainWindow
 let activeStreamController = null
 
+let tray = null
+let trayEnabled = true
+let currentHotkey = 'Alt+G'
+
 // ── Window ────────────────────────────────────────────────────────────────────
 
 function createWindow() {
   const w = parseInt(db.getSetting('window_width',  '1200'))
   const h = parseInt(db.getSetting('window_height', '800'))
+  const savedTheme = db.getSetting('theme', 'dark')
+  const backgroundColor = savedTheme === 'light' ? '#f0eff5' : '#121212'
 
   const isMac = process.platform === 'darwin'
 
@@ -28,7 +34,7 @@ function createWindow() {
     height: h,
     minWidth: 800,
     minHeight: 600,
-    backgroundColor: '#121212',
+    backgroundColor,
     titleBarStyle: isMac ? 'hiddenInset' : 'default',
     frame: isMac ? true : false,
     webPreferences: {
@@ -53,6 +59,13 @@ function createWindow() {
 
   mainWindow.on('maximize',   () => mainWindow.webContents.send('window:maximizeChange', true))
   mainWindow.on('unmaximize', () => mainWindow.webContents.send('window:maximizeChange', false))
+
+  mainWindow.on('close', (e) => {
+    if (trayEnabled && tray) {
+      e.preventDefault()
+      mainWindow.hide()
+    }
+  })
 }
 
 // ── Auto-update ───────────────────────────────────────────────────────────────
@@ -83,16 +96,64 @@ ipcMain.on('updater:install', () => {
   autoUpdater.quitAndInstall(false, true)
 })
 
+function setupTray() {
+  trayEnabled = db.getSetting('tray_enabled', 'true') === 'true'
+  currentHotkey = db.getSetting('tray_hotkey', 'Alt+G')
+
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'app.asar.unpacked', 'public', 'icon.png')
+    : path.join(__dirname, '..', 'public', 'icon.png')
+
+  const icon = nativeImage.createFromPath(iconPath).resize({ width: 16, height: 16 })
+  tray = new Tray(icon)
+  tray.setToolTip('Golem')
+
+  const contextMenu = Menu.buildFromTemplate([
+    { label: 'Show Golem', click: () => showWindow() },
+    { type: 'separator' },
+    { label: 'Quit', click: () => { trayEnabled = false; app.quit() } },
+  ])
+  tray.setContextMenu(contextMenu)
+  tray.on('click', () => showWindow())
+
+  registerHotkey(currentHotkey)
+}
+
+function showWindow() {
+  if (!mainWindow) return
+  if (mainWindow.isMinimized()) mainWindow.restore()
+  mainWindow.show()
+  mainWindow.focus()
+}
+
+function registerHotkey(accelerator) {
+  globalShortcut.unregisterAll()
+  if (!accelerator || !accelerator.trim()) return
+  try {
+    globalShortcut.register(accelerator, () => {
+      if (mainWindow?.isVisible() && mainWindow?.isFocused()) {
+        mainWindow.hide()
+      } else {
+        showWindow()
+      }
+    })
+  } catch (e) {
+    console.error('[tray] Failed to register hotkey:', accelerator, e.message)
+  }
+}
+
 app.whenReady().then(async () => {
   await db.init()
   createWindow()
   setupAutoUpdater()
+  setupTray()
   // Connect all enabled MCP servers in the background — don't block startup.
   const servers = db.listMcpServers()
   if (servers.length > 0) {
     mcpManager.connectAll(servers).catch(() => {})
   }
 })
+app.on('will-quit', () => globalShortcut.unregisterAll())
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 
@@ -141,6 +202,28 @@ ipcMain.handle('db:searchMessages', (_, query) => db.searchMessages(query))
 
 ipcMain.handle('memory:load',     ()                   => db.loadMemory())
 ipcMain.handle('memory:save',     (_, content)         => db.saveMemory(content))
+
+ipcMain.handle('memory:getPath', () => {
+  const custom = db.getSetting('memory_path', '')
+  return custom && custom.trim() ? custom.trim() : null
+})
+
+ipcMain.handle('memory:setPath', (_, filePath) => {
+  db.setSetting('memory_path', filePath || '')
+})
+
+ipcMain.handle('memory:browsePath', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    title: 'Select Memory File',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Text & Markdown', extensions: ['txt', 'md'] },
+      { name: 'All Files', extensions: ['*'] },
+    ],
+  })
+  if (result.canceled || !result.filePaths.length) return null
+  return result.filePaths[0]
+})
 
 ipcMain.handle('dialog:saveFile', async (_, { defaultName, content }) => {
   const result = await dialog.showSaveDialog(mainWindow, {
@@ -794,6 +877,22 @@ ipcMain.handle('ollama:getModelInfo', async (_, modelName) => {
 
 ipcMain.handle('app:getLoginItemEnabled', () => app.getLoginItemSettings().openAtLogin)
 ipcMain.handle('app:setLoginItem', (_, enable) => app.setLoginItemSettings({ openAtLogin: enable, openAsHidden: false }))
+
+ipcMain.handle('tray:getConfig', () => ({
+  enabled: db.getSetting('tray_enabled', 'true') === 'true',
+  hotkey:  db.getSetting('tray_hotkey', 'Alt+G'),
+}))
+
+ipcMain.handle('tray:setEnabled', (_, enabled) => {
+  db.setSetting('tray_enabled', String(enabled))
+  trayEnabled = enabled
+})
+
+ipcMain.handle('tray:setHotkey', (_, accelerator) => {
+  db.setSetting('tray_hotkey', accelerator)
+  currentHotkey = accelerator
+  registerHotkey(accelerator)
+})
 
 // ── MCP ───────────────────────────────────────────────────────────────────────
 

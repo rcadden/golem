@@ -32,6 +32,7 @@ export const MODELS_CATALOG = [
     description: "Meta's compact Llama models optimised for edge and mobile. Strong reasoning and instruction following at small sizes.",
     tags: ['general'],
     context_k: 128,
+    tools: true,
     sizes: [
       { tag: 'llama3.2:1b',  label: '1B',  params_b: 1,  vram_gb: 1.5 },
       { tag: 'llama3.2:3b',  label: '3B',  params_b: 3,  vram_gb: 2.5 },
@@ -44,6 +45,7 @@ export const MODELS_CATALOG = [
     description: "Meta's flagship open model with strong multilingual ability and a massive 128K context window.",
     tags: ['general'],
     context_k: 128,
+    tools: true,
     sizes: [
       { tag: 'llama3.1:8b',  label: '8B',  params_b: 8,  vram_gb: 5.5 },
       { tag: 'llama3.1:70b', label: '70B', params_b: 70, vram_gb: 43  },
@@ -56,6 +58,7 @@ export const MODELS_CATALOG = [
     description: "Alibaba's top open-weight series. Excellent across a wide range of sizes, with strong coding and reasoning.",
     tags: ['general'],
     context_k: 128,
+    tools: true,
     sizes: [
       { tag: 'qwen2.5:0.5b', label: '0.5B', params_b: 0.5, vram_gb: 1.0 },
       { tag: 'qwen2.5:1.5b', label: '1.5B', params_b: 1.5, vram_gb: 1.5 },
@@ -73,6 +76,7 @@ export const MODELS_CATALOG = [
     description: 'Code-specialised variant of Qwen 2.5. Trained on 5.5T tokens of code. Excellent at generation, debugging, and explanation.',
     tags: ['coding'],
     context_k: 128,
+    tools: true,
     sizes: [
       { tag: 'qwen2.5-coder:1.5b', label: '1.5B', params_b: 1.5, vram_gb: 1.5 },
       { tag: 'qwen2.5-coder:7b',   label: '7B',   params_b: 7,   vram_gb: 5.0 },
@@ -87,6 +91,7 @@ export const MODELS_CATALOG = [
     description: 'Reasoning-first model that thinks before answering. Matches frontier models on math and logic tasks at a fraction of the cost.',
     tags: ['reasoning'],
     context_k: 64,
+    tools: false,
     sizes: [
       { tag: 'deepseek-r1:1.5b', label: '1.5B', params_b: 1.5, vram_gb: 1.5 },
       { tag: 'deepseek-r1:7b',   label: '7B',   params_b: 7,   vram_gb: 5.0 },
@@ -103,6 +108,7 @@ export const MODELS_CATALOG = [
     description: "Google's open model family. Known for clean instruction following and strong performance at the 2B and 9B sizes.",
     tags: ['general'],
     context_k: 8,
+    tools: false,
     sizes: [
       { tag: 'gemma2:2b',  label: '2B',  params_b: 2,  vram_gb: 2.0 },
       { tag: 'gemma2:9b',  label: '9B',  params_b: 9,  vram_gb: 6.0 },
@@ -116,6 +122,7 @@ export const MODELS_CATALOG = [
     description: "Microsoft's small model that punches above its weight. Strong STEM and reasoning ability from a 14B model.",
     tags: ['general', 'reasoning'],
     context_k: 16,
+    tools: true,
     sizes: [
       { tag: 'phi4:14b', label: '14B', params_b: 14, vram_gb: 9.0 },
     ],
@@ -127,6 +134,9 @@ export const MODELS_CATALOG = [
     description: 'Compact 3.8B model with a 128K context window. Efficient for instruction following on constrained hardware.',
     tags: ['general'],
     context_k: 128,
+    tools: false,
+    deprecated: true,
+    deprecatedBy: 'phi4-mini',
     sizes: [
       { tag: 'phi3.5:3.8b', label: '3.8B', params_b: 3.8, vram_gb: 3.0 },
     ],
@@ -138,6 +148,7 @@ export const MODELS_CATALOG = [
     description: 'The original breakout open model. Fast, efficient, and surprisingly capable for its size. Good general-purpose baseline.',
     tags: ['general'],
     context_k: 32,
+    tools: true,
     sizes: [
       { tag: 'mistral:7b', label: '7B', params_b: 7, vram_gb: 5.0 },
     ],
@@ -149,6 +160,7 @@ export const MODELS_CATALOG = [
     description: 'A capable 12B model built with NVIDIA. Strong multilingual support, 128K context, and improved reasoning over the base 7B.',
     tags: ['general'],
     context_k: 128,
+    tools: true,
     sizes: [
       { tag: 'mistral-nemo:12b', label: '12B', params_b: 12, vram_gb: 8.0 },
     ],
@@ -160,6 +172,9 @@ export const MODELS_CATALOG = [
     description: "Meta's code-focused Llama variant. Supports code completion, infill, and instruction following across dozens of languages.",
     tags: ['coding'],
     context_k: 16,
+    tools: false,
+    deprecated: true,
+    deprecatedBy: 'devstral',
     sizes: [
       { tag: 'codellama:7b',  label: '7B',  params_b: 7,  vram_gb: 5.0 },
       { tag: 'codellama:13b', label: '13B', params_b: 13, vram_gb: 8.5 },
@@ -173,6 +188,9 @@ export const MODELS_CATALOG = [
     description: 'Code completion model trained on The Stack v2. Strong at fill-in-the-middle and completion tasks across 600+ languages.',
     tags: ['coding'],
     context_k: 16,
+    tools: false,
+    deprecated: true,
+    deprecatedBy: 'qwen3-coder',
     sizes: [
       { tag: 'starcoder2:3b',  label: '3B',  params_b: 3,  vram_gb: 2.5 },
       { tag: 'starcoder2:7b',  label: '7B',  params_b: 7,  vram_gb: 5.0 },
@@ -186,6 +204,7 @@ export const MODELS_CATALOG = [
     description: 'One of the original open vision-language models. Can analyse images you attach to your messages.',
     tags: ['vision'],
     context_k: 4,
+    tools: false,
     sizes: [
       { tag: 'llava:7b',  label: '7B',  params_b: 7,  vram_gb: 5.0 },
       { tag: 'llava:13b', label: '13B', params_b: 13, vram_gb: 8.5 },
@@ -199,6 +218,7 @@ export const MODELS_CATALOG = [
     description: "Meta's multimodal Llama with vision built in. Understands images and documents alongside text.",
     tags: ['vision', 'general'],
     context_k: 128,
+    tools: true,
     sizes: [
       { tag: 'llama3.2-vision:11b', label: '11B', params_b: 11, vram_gb: 7.5 },
       { tag: 'llama3.2-vision:90b', label: '90B', params_b: 90, vram_gb: 55  },
@@ -211,8 +231,179 @@ export const MODELS_CATALOG = [
     description: 'Tiny but capable vision model at 1.8B parameters. Understands images with very low hardware requirements.',
     tags: ['vision'],
     context_k: 2,
+    tools: false,
     sizes: [
       { tag: 'moondream:1.8b', label: '1.8B', params_b: 1.8, vram_gb: 2.0 },
+    ],
+  },
+  {
+    id: 'gemma3',
+    name: 'Gemma 3',
+    family: 'Google',
+    description: "Google's latest open model family. Strong instruction following, multilingual support, and tool calling. Supersedes Gemma 2.",
+    tags: ['general'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'gemma3:1b',  label: '1B',  params_b: 1,  vram_gb: 1.5 },
+      { tag: 'gemma3:4b',  label: '4B',  params_b: 4,  vram_gb: 3.5 },
+      { tag: 'gemma3:12b', label: '12B', params_b: 12, vram_gb: 8.0 },
+      { tag: 'gemma3:27b', label: '27B', params_b: 27, vram_gb: 16  },
+    ],
+  },
+  {
+    id: 'gemma4',
+    name: 'Gemma 4',
+    family: 'Google',
+    description: "Google's most capable open model to date. Multimodal with vision understanding, strong reasoning, and tool calling support.",
+    tags: ['general', 'vision'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'gemma4:4b',  label: '4B',  params_b: 4,  vram_gb: 3.5 },
+      { tag: 'gemma4:12b', label: '12B', params_b: 12, vram_gb: 8.0 },
+      { tag: 'gemma4:27b', label: '27B', params_b: 27, vram_gb: 16  },
+    ],
+  },
+  {
+    id: 'qwen3',
+    name: 'Qwen 3',
+    family: 'Alibaba',
+    description: "Alibaba's Qwen 3 generation — hybrid thinking model that can reason step-by-step or respond directly. Strong on math, coding, and tool use.",
+    tags: ['general', 'reasoning'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'qwen3:0.6b', label: '0.6B', params_b: 0.6, vram_gb: 1.5 },
+      { tag: 'qwen3:1.7b', label: '1.7B', params_b: 1.7, vram_gb: 2.0 },
+      { tag: 'qwen3:4b',   label: '4B',   params_b: 4,   vram_gb: 3.5 },
+      { tag: 'qwen3:8b',   label: '8B',   params_b: 8,   vram_gb: 5.5 },
+      { tag: 'qwen3:14b',  label: '14B',  params_b: 14,  vram_gb: 9.0 },
+      { tag: 'qwen3:32b',  label: '32B',  params_b: 32,  vram_gb: 19  },
+    ],
+  },
+  {
+    id: 'qwen3-coder',
+    name: 'Qwen 3 Coder',
+    family: 'Alibaba',
+    description: 'Code-specialised Qwen 3. Strong at generation, debugging, multi-file editing, and agentic coding workflows with tool calling.',
+    tags: ['coding'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'qwen3-coder:8b',  label: '8B',  params_b: 8,  vram_gb: 5.5 },
+      { tag: 'qwen3-coder:32b', label: '32B', params_b: 32, vram_gb: 19  },
+    ],
+  },
+  {
+    id: 'llama3.3',
+    name: 'Llama 3.3',
+    family: 'Meta',
+    description: "Meta's updated 70B flagship. Matches Llama 3.1 405B performance at a fraction of the size. Best open 70B model available.",
+    tags: ['general'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'llama3.3:70b', label: '70B', params_b: 70, vram_gb: 43 },
+    ],
+  },
+  {
+    id: 'llama4',
+    name: 'Llama 4',
+    family: 'Meta',
+    description: "Meta's Llama 4 generation — mixture-of-experts architecture with vision support. Scout fits consumer hardware; Maverick needs high-end gear.",
+    tags: ['general', 'vision'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'llama4:scout',    label: 'Scout',    params_b: 17, vram_gb: 14 },
+      { tag: 'llama4:maverick', label: 'Maverick', params_b: 17, vram_gb: 28 },
+    ],
+  },
+  {
+    id: 'deepseek-coder-v2',
+    name: 'DeepSeek Coder V2',
+    family: 'DeepSeek',
+    description: 'Code-focused MoE model from DeepSeek. The 16B version is practical on consumer hardware and outperforms GPT-4 on many coding benchmarks.',
+    tags: ['coding'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'deepseek-coder-v2:16b', label: '16B', params_b: 16, vram_gb: 10 },
+    ],
+  },
+  {
+    id: 'qwq',
+    name: 'QwQ',
+    family: 'Alibaba',
+    description: "Qwen's reasoning specialist. Thinks through problems step-by-step before answering. Exceptional on math competitions and complex logic.",
+    tags: ['reasoning'],
+    tools: false,
+    context_k: 32,
+    sizes: [
+      { tag: 'qwq:32b', label: '32B', params_b: 32, vram_gb: 19 },
+    ],
+  },
+  {
+    id: 'devstral',
+    name: 'Devstral',
+    family: 'Mistral AI',
+    description: "Mistral's coding-focused model trained for agentic software engineering tasks. Excels at multi-file edits and tool-augmented development.",
+    tags: ['coding'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'devstral:24b', label: '24B', params_b: 24, vram_gb: 14 },
+    ],
+  },
+  {
+    id: 'magistral',
+    name: 'Magistral',
+    family: 'Mistral AI',
+    description: "Mistral's reasoning model. Extended chain-of-thought for complex problems — mathematics, scientific reasoning, and multi-step logic.",
+    tags: ['reasoning'],
+    tools: false,
+    context_k: 128,
+    sizes: [
+      { tag: 'magistral:24b', label: '24B', params_b: 24, vram_gb: 14 },
+    ],
+  },
+  {
+    id: 'phi4-mini',
+    name: 'Phi 4 Mini',
+    family: 'Microsoft',
+    description: "Compact 3.8B variant of Phi 4. Retains strong STEM and instruction-following ability with very low hardware requirements.",
+    tags: ['general'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'phi4-mini:3.8b', label: '3.8B', params_b: 3.8, vram_gb: 3.0 },
+    ],
+  },
+  {
+    id: 'qwen2.5vl',
+    name: 'Qwen 2.5 VL',
+    family: 'Alibaba',
+    description: "Vision-language variant of Qwen 2.5. Understands images, charts, and documents. Strong document parsing and visual Q&A.",
+    tags: ['vision', 'general'],
+    tools: true,
+    context_k: 128,
+    sizes: [
+      { tag: 'qwen2.5vl:3b',  label: '3B',  params_b: 3,  vram_gb: 2.5 },
+      { tag: 'qwen2.5vl:7b',  label: '7B',  params_b: 7,  vram_gb: 5.0 },
+      { tag: 'qwen2.5vl:72b', label: '72B', params_b: 72, vram_gb: 45  },
+    ],
+  },
+  {
+    id: 'minicpm-v',
+    name: 'MiniCPM-V',
+    family: 'OpenBMB',
+    description: 'Efficient vision-language model from Tsinghua. Strong at OCR, document understanding, and multi-image reasoning at modest hardware cost.',
+    tags: ['vision'],
+    tools: false,
+    context_k: 8,
+    sizes: [
+      { tag: 'minicpm-v:8b', label: '8B', params_b: 8, vram_gb: 5.5 },
     ],
   },
   {
@@ -222,6 +413,7 @@ export const MODELS_CATALOG = [
     description: 'High-quality text embedding model. Use this with RAG pipelines or semantic search. Not for chatting.',
     tags: ['embedding'],
     context_k: 8,
+    tools: false,
     sizes: [
       { tag: 'nomic-embed-text:latest', label: '137M', params_b: 0.137, vram_gb: 0.5 },
     ],
@@ -233,6 +425,7 @@ export const MODELS_CATALOG = [
     description: 'State-of-the-art embedding model that outperforms OpenAI ada-002 on MTEB. For semantic search and retrieval.',
     tags: ['embedding'],
     context_k: 0.5,
+    tools: false,
     sizes: [
       { tag: 'mxbai-embed-large:latest', label: '335M', params_b: 0.335, vram_gb: 0.7 },
     ],
@@ -253,4 +446,10 @@ export const TAG_COLOR = {
   reasoning: { bg: 'rgba(180,100,220,0.12)', text: 'rgba(200,130,240,0.85)', border: 'rgba(180,100,220,0.2)' },
   vision:    { bg: 'rgba(220,140,40,0.12)',  text: 'rgba(240,170,60,0.85)',  border: 'rgba(220,140,40,0.2)' },
   embedding: { bg: 'rgba(100,180,220,0.12)', text: 'rgba(130,200,240,0.85)', border: 'rgba(100,180,220,0.2)' },
+}
+
+export const TOOLS_COLOR = {
+  bg:     'rgba(80,200,200,0.12)',
+  text:   'rgba(100,220,220,0.85)',
+  border: 'rgba(80,200,200,0.2)',
 }

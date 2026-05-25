@@ -46,7 +46,7 @@ export default function SkillModal({ skillId, onClose, onSaved }) {
       onKeyDown={handleKey}
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="bg-[#1e1e1e] border border-white/10 rounded-xl p-5 w-[520px] max-h-[80vh] overflow-y-auto flex flex-col gap-4">
+      <div className="border rounded-xl p-5 w-[520px] max-h-[80vh] overflow-y-auto flex flex-col gap-4" style={{ background: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}>
         <h2 className="text-sm font-semibold">{skillId ? 'Edit Skill' : 'New Skill'}</h2>
 
         <div className="flex gap-3">

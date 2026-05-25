@@ -2,11 +2,62 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Accent (theme-independent) ─────────────────────────────────────────── */
 :root {
   --accent: #6366f1;
   --accent-rgb: 99, 102, 241;
   --accent-mid: #818cf8;
   --accent-light: #a5b4fc;
+}
+
+/* ── Dark theme (default) ───────────────────────────────────────────────── */
+:root {
+  --bg-base:          #0f0f16;
+  --bg-surface:       #121212;
+  --bg-card:          rgba(255,255,255,0.03);
+  --bg-card-hover:    rgba(255,255,255,0.05);
+  --bg-input:         rgba(255,255,255,0.06);
+  --bg-overlay:       rgba(255,255,255,0.04);
+  --border-subtle:    rgba(255,255,255,0.07);
+  --border-mid:       rgba(255,255,255,0.10);
+  --border-strong:    rgba(255,255,255,0.14);
+  --text-primary:     #e4e1ed;
+  --text-secondary:   rgba(196,192,216,0.75);
+  --text-muted:       rgba(196,192,216,0.45);
+  --text-faint:       rgba(196,192,216,0.28);
+  --scrollbar-thumb:  rgba(255,255,255,0.08);
+  --scrollbar-hover:  rgba(255,255,255,0.14);
+  --title-bar-bg:     #0a0a10;
+  --sidebar-bg:       #0e0e14;
+  --user-bubble-bg:   rgba(var(--accent-rgb), 0.18);
+  --user-bubble-border: rgba(var(--accent-rgb), 0.25);
+  --code-bg:          rgba(255,255,255,0.06);
+  --window-bg:        #121212;
+}
+
+/* ── Light theme ────────────────────────────────────────────────────────── */
+:root.light {
+  --bg-base:          #f0eff5;
+  --bg-surface:       #ffffff;
+  --bg-card:          rgba(0,0,0,0.025);
+  --bg-card-hover:    rgba(0,0,0,0.045);
+  --bg-input:         rgba(0,0,0,0.04);
+  --bg-overlay:       rgba(0,0,0,0.03);
+  --border-subtle:    rgba(0,0,0,0.08);
+  --border-mid:       rgba(0,0,0,0.12);
+  --border-strong:    rgba(0,0,0,0.18);
+  --text-primary:     #1a1826;
+  --text-secondary:   rgba(26,24,38,0.70);
+  --text-muted:       rgba(26,24,38,0.45);
+  --text-faint:       rgba(26,24,38,0.28);
+  --scrollbar-thumb:  rgba(0,0,0,0.12);
+  --scrollbar-hover:  rgba(0,0,0,0.20);
+  --title-bar-bg:     #e8e7f0;
+  --sidebar-bg:       #ebebf2;
+  --user-bubble-bg:   rgba(var(--accent-rgb), 0.12);
+  --user-bubble-border: rgba(var(--accent-rgb), 0.22);
+  --code-bg:          rgba(0,0,0,0.05);
+  --window-bg:        #f0eff5;
 }
 
 @layer base {
@@ -16,8 +67,8 @@
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background: #0f0f16;
-    color: #d4d0e8;
+    background: var(--bg-base);
+    color: var(--text-primary);
     font-family: 'Inter', sans-serif;
     -webkit-font-smoothing: antialiased;
     -webkit-text-size-adjust: 100%;
@@ -25,8 +76,8 @@
 
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
 
   .material-symbols-outlined {
     font-family: 'Material Symbols Outlined';

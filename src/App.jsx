@@ -28,6 +28,28 @@ export default function App() {
   const [pullStatus, setPullStatus] = useState('')
   const [pullProgress, setPullProgress] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [theme, setTheme] = useState('dark')
+
+  useEffect(() => {
+    async function loadTheme() {
+      const saved = await window.golem.db.getSetting('theme', 'dark')
+      applyTheme(saved)
+      setTheme(saved)
+    }
+    loadTheme()
+  }, [])
+
+  function applyTheme(t) {
+    const html = document.documentElement
+    html.classList.remove('light', 'dark')
+    if (t === 'light') html.classList.add('light')
+  }
+
+  async function handleThemeChange(t) {
+    setTheme(t)
+    applyTheme(t)
+    await window.golem.db.setSetting('theme', t)
+  }
 
   useEffect(() => {
     api.ollama.onPullProgress(data => {
@@ -354,6 +376,8 @@ export default function App() {
           {view === 'settings' && (
             <SettingsView
               models={models}
+              theme={theme}
+              onThemeChange={handleThemeChange}
             />
           )}
           {view === 'stats' && (

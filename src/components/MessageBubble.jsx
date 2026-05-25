@@ -8,10 +8,10 @@ const codeTheme = {
   ...oneDark,
   'pre[class*="language-"]': {
     ...oneDark['pre[class*="language-"]'],
-    background: '#0d0d16',
+    background: 'var(--code-bg)',
     borderRadius: '10px',
     margin: '10px 0',
-    border: '1px solid rgba(255,255,255,0.07)',
+    border: '1px solid var(--border-subtle)',
   },
 }
 
@@ -29,7 +29,7 @@ function CodeBlock({ language, code }) {
       <button
         onClick={copy}
         className="absolute top-2 right-2 z-10 opacity-0 group-hover/code:opacity-100 transition-opacity flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium"
-        style={{ background: 'rgba(255,255,255,0.08)', color: copied ? 'var(--accent-light)' : 'rgba(196,192,216,0.7)', border: '1px solid rgba(255,255,255,0.1)' }}
+        style={{ background: 'var(--scrollbar-thumb)', color: copied ? 'var(--accent-light)' : 'var(--text-secondary)', border: '1px solid var(--border-mid)' }}
       >
         <span className="material-symbols-outlined" style={{ fontSize: '12px' }}>{copied ? 'check' : 'content_copy'}</span>
         {copied ? 'Copied' : 'Copy'}
@@ -76,9 +76,9 @@ export function ToolCard({ name, args, result, isError, isRunning, onAction }) {
           onClick={() => setExpanded(v => !v)}
           className="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] transition-colors hover:bg-surface-container-high"
           style={{
-            background: 'rgba(255,255,255,0.03)',
-            border: '1px solid rgba(255,255,255,0.07)',
-            color: 'rgba(196,192,216,0.85)',
+            background: 'var(--bg-card)',
+            border: '1px solid var(--border-subtle)',
+            color: 'var(--text-secondary)',
           }}
         >
           <span
@@ -101,7 +101,7 @@ export function ToolCard({ name, args, result, isError, isRunning, onAction }) {
 
         {expanded && (
           <div className="mt-1 pl-3 pr-2 py-2 rounded-lg space-y-2"
-            style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
             {argsStr && (
               <div>
                 <div className="text-[10px] uppercase tracking-wider text-on-surface-variant/60 mb-1">Args</div>
@@ -286,21 +286,21 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
         <div
           className="prose max-w-none"
           style={{
-            '--tw-prose-body':          '#d4d0e8',
-            '--tw-prose-headings':      '#e4e1ed',
-            '--tw-prose-lead':          '#b8b4cc',
-            '--tw-prose-bold':          '#e4e1ed',
-            '--tw-prose-counters':      '#8b88a0',
-            '--tw-prose-bullets':       '#464454',
-            '--tw-prose-hr':            '#2a2a3a',
-            '--tw-prose-quotes':        '#d4d0e8',
+            '--tw-prose-body':          'var(--text-primary)',
+            '--tw-prose-headings':      'var(--text-primary)',
+            '--tw-prose-lead':          'var(--text-secondary)',
+            '--tw-prose-bold':          'var(--text-primary)',
+            '--tw-prose-counters':      'var(--text-muted)',
+            '--tw-prose-bullets':       'var(--border-strong)',
+            '--tw-prose-hr':            'var(--border-mid)',
+            '--tw-prose-quotes':        'var(--text-primary)',
             '--tw-prose-quote-borders': 'rgba(var(--accent-rgb),0.5)',
-            '--tw-prose-captions':      '#8b88a0',
+            '--tw-prose-captions':      'var(--text-muted)',
             '--tw-prose-code':          'var(--accent-light)',
-            '--tw-prose-pre-code':      '#d4d0e8',
-            '--tw-prose-pre-bg':        '#0d0d16',
-            '--tw-prose-th-borders':    'rgba(255,255,255,0.1)',
-            '--tw-prose-td-borders':    'rgba(255,255,255,0.06)',
+            '--tw-prose-pre-code':      'var(--text-primary)',
+            '--tw-prose-pre-bg':        'var(--code-bg)',
+            '--tw-prose-th-borders':    'var(--border-mid)',
+            '--tw-prose-td-borders':    'var(--border-subtle)',
             fontSize: '15px',
             lineHeight: '1.75',
           }}
@@ -349,7 +349,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
               td({ children }) {
                 return (
                   <td className="px-4 py-2 text-[13px]"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                    style={{ borderBottom: '1px solid var(--border-subtle)' }}>
                     {children}
                   </td>
                 )

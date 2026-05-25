@@ -50,7 +50,7 @@ export default function FirstRunView({ onInstallComplete }) {
 
   return (
     <div className="flex flex-col items-center justify-center h-full gap-8 px-8"
-      style={{ background: '#0e0e14' }}>
+      style={{ background: 'var(--bg-base)' }}>
       <img src="/icon.png" alt="Golem" className="w-20 h-20 rounded-2xl opacity-90"
         onError={e => { e.target.style.display = 'none' }} />
 
@@ -58,7 +58,7 @@ export default function FirstRunView({ onInstallComplete }) {
         <h1 className="text-2xl font-bold text-on-surface mb-3" style={{ fontFamily: 'Hanken Grotesk' }}>
           Welcome to Golem
         </h1>
-        <p className="text-[14px] leading-relaxed" style={{ color: 'rgba(196,192,216,0.6)' }}>
+        <p className="text-[14px] leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
           Golem runs AI models locally using Ollama. Ollama isn't detected on this machine — install it to get started.
         </p>
       </div>
@@ -76,17 +76,17 @@ export default function FirstRunView({ onInstallComplete }) {
 
       {status === 'downloading' && (
         <div className="w-full max-w-xs flex flex-col gap-2">
-          <div className="text-[13px] text-center" style={{ color: 'rgba(196,192,216,0.6)' }}>
+          <div className="text-[13px] text-center" style={{ color: 'var(--text-secondary)' }}>
             Downloading… {pct}%
           </div>
-          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--scrollbar-thumb)' }}>
             <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, background: 'var(--accent)' }} />
           </div>
         </div>
       )}
 
       {(status === 'installing' || status === 'waiting') && (
-        <div className="flex items-center gap-2 text-[13px]" style={{ color: 'rgba(196,192,216,0.6)' }}>
+        <div className="flex items-center gap-2 text-[13px]" style={{ color: 'var(--text-secondary)' }}>
           <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
           {message}
         </div>
@@ -94,7 +94,7 @@ export default function FirstRunView({ onInstallComplete }) {
 
       {status === 'manual' && (
         <div className="flex flex-col items-center gap-4 max-w-sm text-center">
-          <p className="text-[13px]" style={{ color: 'rgba(196,192,216,0.6)' }}>{message}</p>
+          <p className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>{message}</p>
           <button
             onClick={handleManualDone}
             className="px-5 py-2.5 rounded-xl text-white text-[13px] font-medium"
@@ -118,14 +118,14 @@ export default function FirstRunView({ onInstallComplete }) {
           <button
             onClick={() => { setStatus('idle'); setPct(0) }}
             className="text-[12px] underline"
-            style={{ color: 'rgba(196,192,216,0.5)' }}
+            style={{ color: 'var(--text-secondary)' }}
           >
             Try again
           </button>
         </div>
       )}
 
-      <p className="text-[12px]" style={{ color: 'rgba(196,192,216,0.35)' }}>
+      <p className="text-[12px]" style={{ color: 'var(--text-faint)' }}>
         Free and open source · Runs entirely on your machine
       </p>
     </div>
