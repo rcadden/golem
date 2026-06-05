@@ -105,7 +105,7 @@ function InstalledTab({ models, hardware, onRefresh }) {
 
 // ── Library View ──────────────────────────────────────────────────────────────
 
-export default function LibraryView({ pulling, pullModel: activePullModel, pullProgress, onPull }) {
+export default function LibraryView({ pulling, pullModel: activePullModel, pullProgress, onPull, remoteCatalog, catalogMeta, onRefreshCatalog }) {
   const [tab, setTab] = useState('browse')
   const [hardware, setHardware] = useState(null)
   const [installedModels, setInstalledModels] = useState([])
@@ -146,7 +146,8 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
     large:  m => m.sizes.some(s => s.params_b > 13),
   }
 
-  const filtered = MODELS_CATALOG.filter(m => {
+  const activeCatalog = remoteCatalog ?? MODELS_CATALOG
+  const filtered = activeCatalog.filter(m => {
     if (!showDeprecated && m.deprecated) return false
     if (filterTier  !== 'all' && getBestTier(m) !== filterTier) return false
     if (filterTag   !== 'all' && !m.tags.includes(filterTag))   return false
@@ -397,6 +398,38 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
           />
         )}
       </div>
+
+      {/* Catalog footer */}
+      {tab === 'browse' && (
+        <div className="px-8 py-2.5 flex items-center gap-3 shrink-0"
+          style={{ borderTop: '1px solid var(--border-subtle)' }}>
+          <span className="text-[11px]" style={{ color: 'var(--text-faint)' }}>
+            {catalogMeta?.updatedAt
+              ? `Catalog updated ${new Date(catalogMeta.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+              : 'Using built-in catalog'}
+          </span>
+          {catalogMeta?.error && (
+            <span className="text-[11px]" style={{ color: 'rgba(220,100,100,0.65)' }}>
+              · Couldn't reach catalog server
+            </span>
+          )}
+          <div className="flex-1" />
+          <button
+            onClick={onRefreshCatalog}
+            disabled={catalogMeta?.refreshing}
+            className="flex items-center gap-1 text-[11px] px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40"
+            style={{ background: 'var(--bg-overlay)', color: 'var(--text-secondary)', border: '1px solid var(--border-subtle)' }}
+            onMouseEnter={e => { e.currentTarget.style.color = 'var(--text-primary)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)' }}
+          >
+            <span className="material-symbols-outlined text-[13px]"
+              style={{ display: 'inline-block', animation: catalogMeta?.refreshing ? 'spin 1s linear infinite' : 'none' }}>
+              refresh
+            </span>
+            {catalogMeta?.refreshing ? 'Updating…' : 'Update now'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

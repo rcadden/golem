@@ -105,3 +105,8 @@
   a.accent-link { color: var(--accent-mid); text-decoration-color: rgba(var(--accent-rgb), 0.4); }
   a.accent-link:hover { color: var(--accent-light); }
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
