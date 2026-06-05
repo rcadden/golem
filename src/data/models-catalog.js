@@ -1,3 +1,5 @@
+import BUNDLED_CATALOG from './models-catalog.json'
+
 // userVramBytes: best GPU VRAM in bytes from hardware.gpus[].vramBytes
 // modelVramGb: model's estimated VRAM requirement in GB
 export function calculateTier(modelVramGb, userVramBytes) {
@@ -24,7 +26,6 @@ export const TIER_COLOR = {
 
 // vram_gb values are Q4_K_M estimates (the default Ollama quantization)
 // Formula: (params_b × 0.56) + 1.0 GB overhead
-import BUNDLED_CATALOG from './models-catalog.json'
 export const MODELS_CATALOG = BUNDLED_CATALOG
 
 export const TAG_LABEL = {
