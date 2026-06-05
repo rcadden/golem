@@ -15,7 +15,7 @@
   "qwen3.6", "phi4-reasoning", "dolphin-phi", "translategemma", "phi",
   "dolphin-mistral", "magistral", "command-r", "hermes3", "granite-code",
   "qwen3-coder-next", "glm-4.7-flash", "codestral", "deepscaler",
-  "embeddinggemma", "yi", "moondream", "granite4", "zephyr", "lfm2.5-thinking",
+  "embeddinggemma", "yi", "moondream", "granite4", "zephyr", "lfm2", "minimax-m3", "lfm2.5-thinking",
   "mistral-large", "wizard-vicuna-uncensored", "phi4-mini", "ministral-3",
   "openthinker", "wizardlm2", "glm4", "starcoder", "deepseek-v2",
   "nous-hermes", "deepseek-llm", "openchat", "falcon", "vicuna", "codeqwen",
