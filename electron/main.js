@@ -357,6 +357,59 @@ function ollamaPost(path, body, { timeout = 10000 } = {}) {
   })
 }
 
+// ── Catalog refresh ───────────────────────────────────────────────────────────
+
+const CATALOG_URL = 'https://raw.githubusercontent.com/rcadden/golem/main/src/data/models-catalog.json'
+const CATALOG_STALE_MS = 24 * 60 * 60 * 1000
+const CATALOG_TIMEOUT_MS = 5000
+
+function fetchCatalogFromNetwork() {
+  return new Promise((resolve, reject) => {
+    let req
+    const timer = setTimeout(() => { req.destroy(); reject(new Error('timeout')) }, CATALOG_TIMEOUT_MS)
+    req = https.get(CATALOG_URL, (res) => {
+      if (res.statusCode !== 200) {
+        clearTimeout(timer)
+        reject(new Error(`HTTP ${res.statusCode}`))
+        return
+      }
+      let raw = ''
+      res.on('data', chunk => { raw += chunk })
+      res.on('end', () => {
+        clearTimeout(timer)
+        try { resolve(JSON.parse(raw)) }
+        catch { reject(new Error('invalid JSON')) }
+      })
+    })
+    req.on('error', err => { clearTimeout(timer); reject(err) })
+  })
+}
+
+ipcMain.handle('catalog:refresh', async (_, force = false) => {
+  const cachedData = db.getSetting('catalog_data', '')
+  const cachedAt   = db.getSetting('catalog_updated_at', '')
+
+  if (!force && cachedAt && cachedData) {
+    const age = Date.now() - new Date(cachedAt).getTime()
+    if (age < CATALOG_STALE_MS) {
+      return { models: JSON.parse(cachedData), updatedAt: cachedAt, fromCache: true }
+    }
+  }
+
+  try {
+    const models = await fetchCatalogFromNetwork()
+    const updatedAt = new Date().toISOString()
+    db.setSetting('catalog_data', JSON.stringify(models))
+    db.setSetting('catalog_updated_at', updatedAt)
+    return { models, updatedAt, fromCache: false }
+  } catch (err) {
+    if (cachedData) {
+      return { models: JSON.parse(cachedData), updatedAt: cachedAt, fromCache: true, error: err.message }
+    }
+    return { models: null, updatedAt: null, error: err.message }
+  }
+})
+
 // ── Tool-calling capability ───────────────────────────────────────────────────
 // Ollama doesn't advertise tool support per model, so we maintain an allowlist
 // of known-good families and probe unknown models once, caching the result.
