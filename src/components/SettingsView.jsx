@@ -582,7 +582,7 @@ export default function SettingsView({
                           <div
                             onClick={() => handleMcpToggle(server.id, !server.enabled)}
                             className="relative w-8 h-5 rounded-full transition-colors duration-200 cursor-pointer shrink-0"
-                            style={{ background: server.enabled ? 'var(--accent)' : 'rgba(255,255,255,0.12)' }}
+                            style={{ background: server.enabled ? 'var(--accent)' : 'var(--border-mid)' }}
                             title={server.enabled ? 'Disable' : 'Enable'}
                           >
                             <div
@@ -834,7 +834,7 @@ export default function SettingsView({
               <div
                 onClick={() => setLaunchAtStartup(v => !v)}
                 className="relative shrink-0 w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer"
-                style={{ background: launchAtStartup ? 'var(--accent)' : 'rgba(255,255,255,0.12)' }}
+                style={{ background: launchAtStartup ? 'var(--accent)' : 'var(--border-mid)' }}
               >
                 <div
                   className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
@@ -854,7 +854,7 @@ export default function SettingsView({
                 <div
                   onClick={() => handleTrayToggle(!trayEnabled)}
                   className="relative shrink-0 w-10 h-6 rounded-full transition-colors duration-200 cursor-pointer"
-                  style={{ background: trayEnabled ? 'var(--accent)' : 'rgba(255,255,255,0.12)' }}
+                  style={{ background: trayEnabled ? 'var(--accent)' : 'var(--border-mid)' }}
                 >
                   <div
                     className="absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform duration-200"
@@ -1003,7 +1003,7 @@ export default function SettingsView({
               </div>
               <div>
                 <div className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Golem</div>
-                <div className="text-body-md text-on-surface-variant text-sm">Version 0.9.1</div>
+                <div className="text-body-md text-on-surface-variant text-sm">Version 0.9.2</div>
               </div>
             </div>
           </div>

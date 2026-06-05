@@ -4,6 +4,15 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.9.2] — 2026-06-05
+
+### Added
+- Model Library auto-refreshes the model catalog from GitHub on launch (at most once per 24 hours); a footer in the Browse tab shows the last-updated date with an "Update now" button to force a refresh
+- Gemma 4 2B QAT edge model added to the catalog — runs in under 1 GB RAM, no GPU required
+- Model catalog extracted to a standalone JSON file, enabling future catalog updates without a full app release
+
+---
+
 ## [0.9.1] — 2026-05-25
 
 ### Fixed
