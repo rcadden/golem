@@ -4,6 +4,14 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.9.3] — 2026-06-05
+
+### Changed
+- Installer size reduced ~30–40 MB: frontend packages already compiled by Vite are no longer bundled into node_modules, and unused sql.js distribution variants (asm, debug, browser, worker) are excluded from the build
+- Tailwind accent color alpha value syntax corrected (rgba format)
+
+---
+
 ## [0.9.2] — 2026-06-05
 
 ### Added

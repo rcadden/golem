@@ -15,7 +15,7 @@ export default {
         'on-background':          'var(--text-primary)',
         'on-surface':             'var(--text-primary)',
         'on-surface-variant':     'var(--text-secondary)',
-        primary:                  'rgb(var(--accent-rgb) / <alpha-value>)',
+        primary:                  'rgba(var(--accent-rgb), <alpha-value>)',
         'primary-container':      '#8083ff',
         'on-primary':             '#ffffff',
         'on-primary-container':   '#0d0096',
