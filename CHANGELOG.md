@@ -4,6 +4,22 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.9.5] — 2026-06-05
+
+### Added
+- **Recursive subdirectory access** — Added platform-agnostic boundary checks resolving Windows drive letter casing issues, and fallback DB file context injection for models without tool-calling support.
+- **Project file @mentions** — Added autocomplete suggestion dropdown when typing `@` in the chat input, supporting keyboard/mouse navigation, and auto-injecting live file contents in XML format on send/edit.
+- **Pulsing assistant avatar** — Visual ambient breathing pulse and icon scaling animations on the Golem avatar during initial model thinking and token streaming.
+
+### Changed
+- Updated `@` autocomplete list to dynamically re-fetch from the database on text input focus to prevent stale options.
+
+### Fixed
+- Corrected model catalog tags for `qwen3-coder` (30B only) and `gemma4` (edge models e2b/e4b, 26B).
+- Added `lfm2` and silenced `minimax-m3` in the catalog.
+
+---
+
 ## [0.9.4] — 2026-06-05
 
 ### Fixed
