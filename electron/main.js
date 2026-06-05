@@ -543,7 +543,25 @@ ipcMain.handle('ollama:listModels', async () => {
 })
 
 ipcMain.handle('ollama:deleteModel', async (_, name) => {
-  return ollamaPost('/api/delete', { name })
+  return new Promise((resolve, reject) => {
+    const bodyStr = JSON.stringify({ name })
+    const req = http.request(`${OLLAMA_BASE}/api/delete`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyStr) },
+      timeout: 10000,
+    }, (res) => {
+      let data = ''
+      res.on('data', c => data += c)
+      res.on('end', () => {
+        if (res.statusCode >= 200 && res.statusCode < 300) resolve({ ok: true })
+        else reject(new Error(data || `Delete failed (${res.statusCode})`))
+      })
+    })
+    req.on('error', reject)
+    req.on('timeout', () => req.destroy(new Error('timeout')))
+    req.write(bodyStr)
+    req.end()
+  })
 })
 
 ipcMain.handle('ollama:pullModel', async (event, name) => {
@@ -554,6 +572,7 @@ ipcMain.handle('ollama:pullModel', async (event, name) => {
       headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(bodyStr) },
     }, (res) => {
       let buf = ''
+      let streamError = null
       res.on('data', chunk => {
         buf += chunk
         const lines = buf.split('\n')
@@ -562,11 +581,15 @@ ipcMain.handle('ollama:pullModel', async (event, name) => {
           if (!line.trim()) continue
           try {
             const data = JSON.parse(line)
+            if (data.error) { streamError = data.error; return }
             event.sender.send('ollama:pullProgress', data)
           } catch {}
         }
       })
-      res.on('end', () => resolve({ ok: true }))
+      res.on('end', () => {
+        if (streamError) reject(new Error(streamError))
+        else resolve({ ok: true })
+      })
     })
     req.on('error', reject)
     req.write(bodyStr)

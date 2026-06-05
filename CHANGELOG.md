@@ -4,6 +4,15 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.9.4] — 2026-06-05
+
+### Fixed
+- Model delete now works — was sending POST instead of DELETE to Ollama's API, so the button appeared to do nothing
+- Pull errors from Ollama (e.g., unknown model tag) are now surfaced as "Error: …" in the title bar instead of silently resolving as success
+- Auto-updater no longer fails signature verification on unsigned builds (removed publisherName from embedded app-update.yml)
+
+---
+
 ## [0.9.3] — 2026-06-05
 
 ### Changed
