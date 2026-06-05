@@ -135,4 +135,7 @@ contextBridge.exposeInMainWorld('golem', {
     offError:       ()   => ipcRenderer.removeAllListeners('updater:error'),
     install:        ()   => ipcRenderer.send('updater:install'),
   },
+  catalog: {
+    refresh: (force) => ipcRenderer.invoke('catalog:refresh', force),
+  },
 })
