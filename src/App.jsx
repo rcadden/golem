@@ -29,6 +29,8 @@ export default function App() {
   const [pullProgress, setPullProgress] = useState(null)
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [theme, setTheme] = useState('dark')
+  const [remoteCatalog, setRemoteCatalog]   = useState(null)
+  const [catalogMeta,   setCatalogMeta]     = useState({ updatedAt: null, refreshing: false, error: false })
 
   useEffect(() => {
     async function loadTheme() {
@@ -86,6 +88,7 @@ export default function App() {
       const projs = await loadProjectsWithData()
       setProjects(projs)
       // Always open to empty state — user can select from sidebar
+      refreshCatalog(false)
     }
     init()
   }, [])
@@ -145,6 +148,17 @@ export default function App() {
       setTimeout(() => { setPullStatus(''); setPullModel('') }, 3000)
     }
   }, [pulling, refreshModels])
+
+  async function refreshCatalog(force) {
+    setCatalogMeta(m => ({ ...m, refreshing: true, error: false }))
+    try {
+      const result = await api.catalog.refresh(force)
+      if (result.models) setRemoteCatalog(result.models)
+      setCatalogMeta({ updatedAt: result.updatedAt, refreshing: false, error: !!result.error && !result.models })
+    } catch {
+      setCatalogMeta(m => ({ ...m, refreshing: false, error: true }))
+    }
+  }
 
   const deleteModel = useCallback(async (name) => {
     await api.ollama.deleteModel(name)
@@ -389,6 +403,9 @@ export default function App() {
               pullModel={pullModel}
               pullProgress={pullProgress}
               onPull={startPull}
+              remoteCatalog={remoteCatalog}
+              catalogMeta={catalogMeta}
+              onRefreshCatalog={() => refreshCatalog(true)}
             />
           )}
         </main>
