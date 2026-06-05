@@ -87,6 +87,17 @@ _Keep the local model experience current and informed._
 
 ---
 
+## Sprint 7 — Distribution & Reliability (v0.9.3–0.9.4) ✓
+_Shrink the install footprint, fix silent failures, keep the catalog accurate._
+
+- [x] **Installer size reduction** — excluded frontend packages already compiled by Vite from node_modules; stripped unused sql.js dist variants (asm, debug, browser, worker); 108 MB → 86 MB
+- [x] **Auto-updater signature fix** — removed `publisherName` from `app-update.yml`; unsigned builds were failing signature verification against "Applied Flux, LLC", silently showing "Update failed"
+- [x] **Model delete fix** — `ollama:deleteModel` IPC was using POST instead of DELETE; button appeared to do nothing
+- [x] **Pull error surfacing** — Ollama stream errors (e.g., unknown model tag) now propagate as "Error: …" instead of silently resolving as success
+- [x] **Catalog tag audit** — corrected gemma4 edge tags (`e2b`/`e4b`/`26b`), corrected qwen3-coder tags (`30b` only — `8b`/`32b` don't exist on Ollama), added LFM2 24B
+
+---
+
 ## Future Explorations
 _No commitment. Parking lot for evaluated ideas._
 
