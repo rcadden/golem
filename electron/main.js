@@ -368,6 +368,7 @@ function fetchCatalogFromNetwork() {
     let req
     const timer = setTimeout(() => { req.destroy(); reject(new Error('timeout')) }, CATALOG_TIMEOUT_MS)
     req = https.get(CATALOG_URL, (res) => {
+      res.on('error', () => {})
       if (res.statusCode !== 200) {
         clearTimeout(timer)
         reject(new Error(`HTTP ${res.statusCode}`))
@@ -392,7 +393,11 @@ ipcMain.handle('catalog:refresh', async (_, force = false) => {
   if (!force && cachedAt && cachedData) {
     const age = Date.now() - new Date(cachedAt).getTime()
     if (age < CATALOG_STALE_MS) {
-      return { models: JSON.parse(cachedData), updatedAt: cachedAt, fromCache: true }
+      try {
+        return { models: JSON.parse(cachedData), updatedAt: cachedAt, fromCache: true }
+      } catch {
+        // corrupt cache — fall through to network fetch
+      }
     }
   }
 
@@ -404,7 +409,11 @@ ipcMain.handle('catalog:refresh', async (_, force = false) => {
     return { models, updatedAt, fromCache: false }
   } catch (err) {
     if (cachedData) {
-      return { models: JSON.parse(cachedData), updatedAt: cachedAt, fromCache: true, error: err.message }
+      try {
+        return { models: JSON.parse(cachedData), updatedAt: cachedAt, fromCache: true, error: err.message }
+      } catch {
+        // corrupt cache
+      }
     }
     return { models: null, updatedAt: null, error: err.message }
   }
