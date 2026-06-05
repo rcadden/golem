@@ -193,7 +193,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
   if (isThinking) {
     return (
       <div className="flex items-start gap-4 mb-6 px-1">
-        <Avatar />
+        <Avatar isThinking={true} />
         <div className="flex items-center gap-1.5 mt-2.5">
           {[0, 160, 320].map(delay => (
             <span
@@ -281,7 +281,7 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
   // ── Assistant message ─────────────────────────────────────────────────────────
   return (
     <div className="flex items-start gap-4 mb-8 px-1 group">
-      <Avatar />
+      <Avatar isStreaming={isStreaming} />
       <div className="flex-1 min-w-0 mt-0.5">
         <div
           className="prose max-w-none"
@@ -397,7 +397,8 @@ export default function MessageBubble({ role, content, isStreaming, isThinking, 
   )
 }
 
-function Avatar() {
+function Avatar({ isThinking, isStreaming }) {
+  const isWorking = isThinking || isStreaming
   return (
     <div
       className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center mt-0.5"
@@ -405,9 +406,19 @@ function Avatar() {
         background: 'linear-gradient(135deg, rgba(var(--accent-rgb),0.3), rgba(var(--accent-rgb),0.15))',
         border: '1px solid rgba(var(--accent-rgb),0.3)',
         boxShadow: '0 0 12px rgba(var(--accent-rgb),0.15)',
+        ...(isWorking ? { animation: 'avatar-pulse 2s infinite ease-in-out' } : {})
       }}
     >
-      <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--accent-mid)' }}>smart_toy</span>
+      <span 
+        className="material-symbols-outlined" 
+        style={{ 
+          fontSize: '14px', 
+          color: 'var(--accent-mid)',
+          ...(isWorking ? { animation: 'avatar-icon-pulse 2s infinite ease-in-out' } : {})
+        }}
+      >
+        smart_toy
+      </span>
     </div>
   )
 }

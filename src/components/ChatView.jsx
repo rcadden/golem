@@ -103,10 +103,26 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   const [error, setError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState([])
   const [runningModels, setRunningModels] = useState([]) // [{ name, size_vram }] from /api/ps
+  const [projectFiles, setProjectFiles] = useState([])
+  const [mentionQuery, setMentionQuery] = useState(null)
+  const [mentionStartIndex, setMentionStartIndex] = useState(-1)
+  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0)
   const bottomRef = useRef(null)
   const textareaRef = useRef(null)
   const elapsedIntervalRef = useRef(null)
   const saveDraftTimerRef = useRef(null)
+
+  useEffect(() => {
+    if (conv?.project_id) {
+      api.db.listProjectFiles(conv.project_id).then(files => {
+        setProjectFiles(files ?? [])
+      }).catch(() => {})
+    } else {
+      setProjectFiles([])
+    }
+    setMentionQuery(null)
+    setMentionStartIndex(-1)
+  }, [conv?.project_id])
 
   useEffect(() => {
     if (!selectedModel) { setToolCap(null); return }
@@ -274,14 +290,97 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     }
   }
 
+  async function resolveMentionsInText(text) {
+    if (!conv?.project_id || !text) return []
+    const mentionRegex = /@\[([^\]]+)\]/g
+    const mentionedPaths = new Set()
+    let match
+    while ((match = mentionRegex.exec(text)) !== null) {
+      mentionedPaths.add(match[1])
+    }
+    const resolved = []
+    for (const p of mentionedPaths) {
+      try {
+        const fileContent = await api.db.readProjectFile(conv.project_id, p)
+        if (fileContent !== null) {
+          resolved.push({ name: p, content: fileContent })
+        }
+      } catch (e) {
+        console.error('Failed to resolve mention:', p, e)
+      }
+    }
+    return resolved
+  }
+
+  function handleMentionTracking(e) {
+    const text = e.target.value ?? textareaRef.current?.value ?? ''
+    const selStart = e.target.selectionStart ?? textareaRef.current?.selectionStart ?? 0
+
+    // Find the last '@' before the cursor
+    const lastAt = text.lastIndexOf('@', selStart - 1)
+    if (lastAt !== -1) {
+      const charBeforeAt = lastAt === 0 ? '' : text[lastAt - 1]
+      const isValidTrigger = charBeforeAt === '' || /\s/.test(charBeforeAt)
+      const textBetween = text.slice(lastAt + 1, selStart)
+      const hasSpaces = /\s/.test(textBetween)
+
+      if (isValidTrigger && !hasSpaces) {
+        setMentionQuery(textBetween)
+        setMentionStartIndex(lastAt)
+        
+        const filtered = projectFiles.filter(f => 
+          f.name.toLowerCase().includes(textBetween.toLowerCase())
+        ).slice(0, 8)
+        setSelectedMentionIndex(prev => Math.min(prev, Math.max(0, filtered.length - 1)))
+        
+        if (conv?.project_id && projectFiles.length === 0) {
+          api.db.listProjectFiles(conv.project_id).then(files => {
+            setProjectFiles(files ?? [])
+          }).catch(() => {})
+        }
+        return
+      }
+    }
+    setMentionQuery(null)
+    setMentionStartIndex(-1)
+  }
+
+  function insertMention(fileRelPath) {
+    if (mentionStartIndex === -1) return
+    const text = input
+    const before = text.slice(0, mentionStartIndex)
+    const after = text.slice(textareaRef.current.selectionStart)
+    const inserted = `@[${fileRelPath}] `
+    const nextInput = before + inserted + after
+    setInput(nextInput)
+    setMentionQuery(null)
+    setMentionStartIndex(-1)
+    
+    if (conv) {
+      api.db.saveDraft(conv.id, nextInput)
+    }
+
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus()
+        const newPos = before.length + inserted.length
+        textareaRef.current.setSelectionRange(newPos, newPos)
+        textareaRef.current.style.height = 'auto'
+        textareaRef.current.style.height = Math.min(textareaRef.current.scrollHeight, 128) + 'px'
+      }
+    }, 10)
+  }
+
   async function send(text) {
     const baseContent = (text || input).trim()
     if (!baseContent && attachedFiles.length === 0) return
     if (streaming || !conv || !selectedModel) return
 
+    const resolvedMentions = await resolveMentionsInText(baseContent)
     let content = baseContent
-    if (attachedFiles.length > 0) {
-      const fileContext = attachedFiles
+    const allAttachments = [...attachedFiles, ...resolvedMentions]
+    if (allAttachments.length > 0) {
+      const fileContext = allAttachments
         .map(f => `<file name="${f.name}">\n${f.content}\n</file>`)
         .join('\n\n')
       content = fileContext + (baseContent ? `\n\n${baseContent}` : '')
@@ -315,7 +414,17 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     if (streaming || !conv || !selectedModel) return
     const idx = messages.findIndex(m => m.id === msgId)
     if (idx === -1) return
-    await api.db.updateMessage(msgId, newContent)
+
+    const resolvedMentions = await resolveMentionsInText(newContent)
+    let content = newContent
+    if (resolvedMentions.length > 0) {
+      const fileContext = resolvedMentions
+        .map(f => `<file name="${f.name}">\n${f.content}\n</file>`)
+        .join('\n\n')
+      content = fileContext + `\n\n${newContent}`
+    }
+
+    await api.db.updateMessage(msgId, content)
     const toDelete = messages.slice(idx + 1)
     for (const m of toDelete) await api.db.deleteMessage(m.id)
     const remaining = await api.db.getMessages(conv.id)
@@ -381,6 +490,36 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   }
 
   function handleKeyDown(e) {
+    if (mentionQuery !== null) {
+      const filtered = projectFiles.filter(f => 
+        f.name.toLowerCase().includes(mentionQuery.toLowerCase())
+      ).slice(0, 8)
+
+      if (filtered.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault()
+          setSelectedMentionIndex(prev => (prev + 1) % filtered.length)
+          return
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault()
+          setSelectedMentionIndex(prev => (prev - 1 + filtered.length) % filtered.length)
+          return
+        }
+        if (e.key === 'Enter' || e.key === 'Tab') {
+          e.preventDefault()
+          insertMention(filtered[selectedMentionIndex].name)
+          return
+        }
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          setMentionQuery(null)
+          setMentionStartIndex(-1)
+          return
+        }
+      }
+    }
+
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       send()
@@ -620,7 +759,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
           )}
 
           <div
-            className="rounded-2xl p-3 flex flex-col gap-2 transition-all duration-200"
+            className="rounded-2xl p-3 flex flex-col gap-2 relative transition-all duration-200"
             style={{
               background: 'var(--bg-input)',
               border: '1px solid var(--border-mid)',
@@ -629,6 +768,41 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
             onFocusCapture={e => e.currentTarget.style.boxShadow = '0 0 0 2px rgba(var(--accent-rgb),0.35), 0 8px 32px rgba(var(--accent-rgb),0.08)'}
             onBlurCapture={e => e.currentTarget.style.boxShadow = '0 0 0 0 rgba(var(--accent-rgb),0)'}
           >
+            {mentionQuery !== null && (() => {
+              const filtered = projectFiles.filter(f => 
+                f.name.toLowerCase().includes(mentionQuery.toLowerCase())
+              ).slice(0, 8)
+              if (filtered.length === 0) return null
+              return (
+                <div 
+                  className="absolute bottom-full left-3 mb-2 z-30 rounded-xl shadow-2xl py-1 min-w-[280px] max-w-[400px] border border-outline-variant"
+                  style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-mid)', backdropFilter: 'blur(10px)', boxShadow: '0 16px 48px rgba(0,0,0,0.5)' }}
+                >
+                  <div className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-on-surface-variant/40 font-semibold flex items-center justify-between">
+                    <span>File Mentions</span>
+                    <span className="opacity-60 text-[9px]">Type to filter</span>
+                  </div>
+                  {filtered.map((file, idx) => {
+                    const isActive = idx === selectedMentionIndex
+                    return (
+                      <button
+                        key={file.id}
+                        onClick={() => insertMention(file.name)}
+                        className={`w-full text-left px-3 py-2 text-[12px] truncate transition-colors flex items-center gap-2
+                          ${isActive 
+                            ? 'bg-primary/20 text-primary-light font-medium' 
+                            : 'text-on-surface hover:bg-white/5'
+                          }`}
+                        style={isActive ? { color: 'var(--accent-light)', background: 'rgba(var(--accent-rgb),0.15)' } : {}}
+                      >
+                        <span className="material-symbols-outlined text-[14px] opacity-60">description</span>
+                        <span className="truncate flex-1">{file.name}</span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )
+            })()}
             <textarea
               ref={textareaRef}
               value={input}
@@ -641,8 +815,18 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                     api.db.saveDraft(conv.id, val)
                   }, 300)
                 }
+                handleMentionTracking(e)
               }}
+              onKeyUp={handleMentionTracking}
+              onSelect={handleMentionTracking}
               onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (conv?.project_id) {
+                  api.db.listProjectFiles(conv.project_id).then(files => {
+                    setProjectFiles(files ?? [])
+                  }).catch(() => {})
+                }
+              }}
               placeholder={conv?.project_id ? 'Message Golem…' : 'Message Golem… — open a project with a directory set for file & git tools'}
               rows={1}
               className="w-full bg-transparent border-none outline-none text-on-surface placeholder:text-on-surface-variant text-body-md resize-none overflow-y-auto leading-6"

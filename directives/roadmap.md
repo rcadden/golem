@@ -98,6 +98,15 @@ _Shrink the install footprint, fix silent failures, keep the catalog accurate._
 
 ---
 
+## Sprint 8 — Workspace & UX Polish (v0.9.5) ✓
+_Nested directory support, pulsing thinking avatar, and project file @mentions._
+
+- [x] **Recursive subdirectory access** — platform-agnostic relative boundary checks resolving Windows drive letter casing issues; no-tool fallback prompt injection for smaller models.
+- [x] **Animated thinking indicator** — breathing ambient glow and scaling/color shift animations on the Golem avatar during initial thinking and token streaming.
+- [x] **Project file @mentions** — floating autocomplete mention dropdown in chat textarea with cursor-tracking and keyboard navigation; automatic live file reading and XML context injection on send/edit.
+
+---
+
 ## Future Explorations
 _No commitment. Parking lot for evaluated ideas._
 

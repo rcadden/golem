@@ -207,6 +207,23 @@ ipcMain.handle('db:listProjectConversations', (_, projectId)             => db.l
 ipcMain.handle('db:listProjectFiles',         (_, projectId)             => db.listProjectFiles(projectId))
 ipcMain.handle('db:addProjectFile',           (_, projectId, name, content) => db.addProjectFile(projectId, name, content))
 ipcMain.handle('db:removeProjectFile',        (_, id)                    => db.removeProjectFile(id))
+ipcMain.handle('project:readFile', async (_, projectId, relPath) => {
+  const project = db.getProject(projectId)
+  if (!project) return null
+  if (project.directory_path) {
+    try {
+      const fullPath = resolveSafe(project.directory_path, relPath)
+      if (fs.existsSync(fullPath) && !fs.statSync(fullPath).isDirectory()) {
+        return fs.readFileSync(fullPath, 'utf8')
+      }
+    } catch (e) {
+      console.error('[project:readFile] failed to read from disk:', relPath, e.message)
+    }
+  }
+  const files = db.listProjectFiles(projectId)
+  const file = files.find(f => f.name === relPath)
+  return file ? file.content : null
+})
 
 ipcMain.handle('db:searchMessages', (_, query) => db.searchMessages(query))
 
@@ -693,19 +710,20 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
     const skill = db.getSkill(payload.skillId)
     if (skill?.system_prompt) basePrompt = skill.system_prompt
   }
+  // Tool capability — auto-detected per model
+  const toolsEnabled = await getToolCapability(payload.model)
 
   const parts = [basePrompt]
   if (memory) parts.push(`User context:\n${memory}`)
-  if (payload.projectId && !projectDir) {
-    // Only inject synced files when no live directory is set.
-    // When a directory is active, the model uses read_file / list_directory on demand.
+  if (payload.projectId && (!projectDir || !toolsEnabled)) {
+    // Inject synced files when no live directory is set OR when the model lacks tool support
     const files = db.listProjectFiles(payload.projectId)
     if (files.length > 0) {
       const fileContext = files.map(f => `<file name="${f.name}">\n${f.content}\n</file>`).join('\n\n')
       parts.push(`Project files (always available for reference):\n${fileContext}`)
     }
   }
-  if (projectDir) {
+  if (projectDir && toolsEnabled) {
     parts.push(
       `You have access to filesystem and git tools for the project at: ${projectDir}\n\n` +
       `IMPORTANT — always follow this order:\n` +
@@ -719,8 +737,6 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
   }
   const systemPrompt = parts.join('\n\n')
 
-  // Tool capability — auto-detected per model
-  const toolsEnabled = await getToolCapability(payload.model)
   const activeSkill = payload.skillId ? db.getSkill(payload.skillId) : null
 
   // MCP tools — filter to project associations when applicable (Phase 3)

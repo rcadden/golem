@@ -110,3 +110,25 @@
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 }
+
+@keyframes avatar-pulse {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(var(--accent-rgb), 0.15);
+    border-color: rgba(var(--accent-rgb), 0.3);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(var(--accent-rgb), 0.6), 0 0 0 2px rgba(var(--accent-rgb), 0.15);
+    border-color: rgba(var(--accent-rgb), 0.6);
+  }
+}
+
+@keyframes avatar-icon-pulse {
+  0%, 100% {
+    transform: scale(1);
+    color: var(--accent-mid);
+  }
+  50% {
+    transform: scale(1.15);
+    color: var(--accent-light);
+  }
+}

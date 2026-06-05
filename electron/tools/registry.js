@@ -18,7 +18,12 @@ function resolveSafe(projectDir, relPath) {
   if (!projectDir) throw new Error('No project directory configured. Set one via right-click → Set Directory on the project in the sidebar.')
   const base = path.resolve(projectDir)
   const resolved = path.resolve(base, relPath)
-  if (resolved !== base && !resolved.startsWith(base + path.sep)) {
+  
+  // Platform-agnostic directory boundary check using path.relative
+  const relative = path.relative(base, resolved)
+  const isOutside = relative.startsWith('..') || path.isAbsolute(relative)
+  
+  if (isOutside) {
     throw new Error(`Path "${relPath}" is outside the project directory.`)
   }
   return resolved
