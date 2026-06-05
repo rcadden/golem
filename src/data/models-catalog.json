@@ -234,10 +234,10 @@
     "tools": true,
     "context_k": 128,
     "sizes": [
-      { "tag": "gemma4:2b",  "label": "2B",  "params_b": 2,  "vram_gb": 1.0 },
-      { "tag": "gemma4:4b",  "label": "4B",  "params_b": 4,  "vram_gb": 3.5 },
-      { "tag": "gemma4:12b", "label": "12B", "params_b": 12, "vram_gb": 8.0 },
-      { "tag": "gemma4:27b", "label": "27B", "params_b": 27, "vram_gb": 16  }
+      { "tag": "gemma4:e2b",  "label": "2B Edge",  "params_b": 2,  "vram_gb": 1.0 },
+      { "tag": "gemma4:e4b",  "label": "4B Edge",  "params_b": 4,  "vram_gb": 3.5 },
+      { "tag": "gemma4:12b",  "label": "12B",       "params_b": 12, "vram_gb": 8.0 },
+      { "tag": "gemma4:26b",  "label": "26B",       "params_b": 26, "vram_gb": 16  }
     ]
   },
   {

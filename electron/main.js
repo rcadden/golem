@@ -587,8 +587,14 @@ ipcMain.handle('ollama:pullModel', async (event, name) => {
         }
       })
       res.on('end', () => {
-        if (streamError) reject(new Error(streamError))
-        else resolve({ ok: true })
+        if (streamError) { reject(new Error(streamError)); return }
+        if (buf.trim()) {
+          try {
+            const last = JSON.parse(buf)
+            if (last.error) { reject(new Error(last.error)); return }
+          } catch {}
+        }
+        resolve({ ok: true })
       })
     })
     req.on('error', reject)
