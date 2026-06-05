@@ -81,8 +81,7 @@
           ]
         }
       ],
-      "icon": "public/icon.png",
-      "publisherName": "Applied Flux, LLC"
+      "icon": "public/icon.png"
     },
     "mac": {
       "target": [
