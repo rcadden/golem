@@ -139,4 +139,9 @@ contextBridge.exposeInMainWorld('golem', {
   catalog: {
     refresh: (force) => ipcRenderer.invoke('catalog:refresh', force),
   },
+  announcement: {
+    onShow:  (cb) => ipcRenderer.on('announcement:show', (_, ann) => cb(ann)),
+    offShow: ()   => ipcRenderer.removeAllListeners('announcement:show'),
+    dismiss: (id) => ipcRenderer.invoke('announcement:dismiss', id),
+  },
 })

@@ -17,6 +17,7 @@ export default function TitleBar({
   const [updateProgress, setUpdateProgress] = useState(null)    // 0-100 | null
   const [updateError, setUpdateError]     = useState(null)
   const [platform, setPlatform] = useState('win32')
+  const [announcement, setAnnouncement] = useState(null)         // { id, message, url } | null
 
   useEffect(() => {
     api.window.isMaximized().then(setIsMaximized)
@@ -25,6 +26,7 @@ export default function TitleBar({
     api.updater.onProgress(data => setUpdateProgress(data.percent))
     api.updater.onDownloaded(() => { setUpdateReady(true); setUpdateProgress(null) })
     api.updater.onError(() => { setUpdateProgress(null); setUpdateError(true) })
+    api.announcement.onShow(ann => setAnnouncement(ann))
     api.system.platform().then(setPlatform)
     return () => {
       api.window.offMaximizeChange()
@@ -32,6 +34,7 @@ export default function TitleBar({
       api.updater.offProgress()
       api.updater.offDownloaded()
       api.updater.offError()
+      api.announcement.offShow()
     }
   }, [])
 
@@ -125,6 +128,43 @@ export default function TitleBar({
             <span className="material-symbols-outlined" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 1" }}>update</span>
             Update ready — restart to install
           </button>
+        )}
+
+        {/* Remote announcement */}
+        {announcement && (
+          <div
+            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px]"
+            style={{
+              background: 'rgba(251,191,36,0.12)',
+              border: '1px solid rgba(251,191,36,0.30)',
+              color: 'rgb(252,211,77)',
+            }}
+          >
+            <span className="material-symbols-outlined" style={{ fontSize: '12px', fontVariationSettings: "'FILL' 1" }}>warning</span>
+            {announcement.url ? (
+              <a
+                href={announcement.url}
+                target="_blank"
+                rel="noreferrer"
+                className="hover:underline"
+                style={{ color: 'inherit' }}
+              >
+                {announcement.message}
+              </a>
+            ) : (
+              <span>{announcement.message}</span>
+            )}
+            <button
+              onClick={() => {
+                api.announcement.dismiss(announcement.id)
+                setAnnouncement(null)
+              }}
+              className="ml-0.5 opacity-60 hover:opacity-100 transition-opacity"
+              title="Dismiss"
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '11px' }}>close</span>
+            </button>
+          </div>
         )}
       </div>
 

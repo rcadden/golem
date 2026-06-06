@@ -1,0 +1,12 @@
+{
+  "announcements": [
+    {
+      "id": "updater-broken-v092",
+      "minVersion": "0.0.0",
+      "maxVersion": "0.9.2",
+      "severity": "warning",
+      "message": "Auto-updater needs a one-time manual fix — download the latest release from GitHub.",
+      "url": "https://github.com/rcadden/golem/releases/latest"
+    }
+  ]
+}

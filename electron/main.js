@@ -106,6 +106,56 @@ ipcMain.on('updater:install', () => {
   autoUpdater.quitAndInstall(false, true)
 })
 
+// ── Announcements ─────────────────────────────────────────────────────────────
+// Fetches a remote JSON on startup and surfaces any version-targeted messages
+// as in-app chips. Announcements are dismissible and stored in settings so they
+// don't reappear.
+const ANNOUNCEMENTS_URL = 'https://raw.githubusercontent.com/rcadden/golem/main/announcements.json'
+
+function semverCompare(a, b) {
+  const pa = a.replace(/^v/, '').split('.').map(Number)
+  const pb = b.replace(/^v/, '').split('.').map(Number)
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] || 0) > (pb[i] || 0)) return  1
+    if ((pa[i] || 0) < (pb[i] || 0)) return -1
+  }
+  return 0
+}
+
+function setupAnnouncements() {
+  if (isDev) return
+  const currentVersion = app.getVersion()
+
+  https.get(ANNOUNCEMENTS_URL, (res) => {
+    let raw = ''
+    res.on('data', chunk => { raw += chunk })
+    res.on('end', () => {
+      try {
+        const { announcements = [] } = JSON.parse(raw)
+        const active = announcements.filter(ann => {
+          if (db.getSetting(`announcement_dismissed_${ann.id}`, 'false') === 'true') return false
+          const aboveMin = !ann.minVersion || semverCompare(currentVersion, ann.minVersion) >= 0
+          const belowMax = !ann.maxVersion || semverCompare(currentVersion, ann.maxVersion) <= 0
+          return aboveMin && belowMax
+        })
+        if (!active.length) return
+        // Send after the renderer has loaded so the IPC listeners are registered.
+        mainWindow?.webContents.once('did-finish-load', () => {
+          active.forEach(ann => mainWindow?.webContents.send('announcement:show', ann))
+        })
+      } catch (err) {
+        console.error('[announcements] parse error:', err?.message)
+      }
+    })
+  }).on('error', err => {
+    console.error('[announcements] fetch error:', err?.message)
+  })
+}
+
+ipcMain.handle('announcement:dismiss', (_, id) => {
+  db.setSetting(`announcement_dismissed_${id}`, 'true')
+})
+
 function setupTray() {
   trayEnabled = db.getSetting('tray_enabled', 'true') === 'true'
   currentHotkey = db.getSetting('tray_hotkey', 'Alt+G')
@@ -156,6 +206,7 @@ app.whenReady().then(async () => {
   await db.init()
   createWindow()
   setupAutoUpdater()
+  setupAnnouncements()
   setupTray()
   // Connect all enabled MCP servers in the background — don't block startup.
   const servers = db.listMcpServers()
