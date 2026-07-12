@@ -512,6 +512,10 @@ function setSetting(key, value) {
   run("INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", [key, value])
 }
 
+function listSettingsByPrefix(prefix) {
+  return all('SELECT key, value FROM settings WHERE key LIKE ?', [`${prefix}%`])
+}
+
 // ── Drafts ────────────────────────────────────────────────────────────────────
 
 function getDraft(convId) {
@@ -622,7 +626,7 @@ module.exports = {
   getMessages, addMessage, updateMessage, deleteMessage,
   listSigils, getSigil, createSigil, updateSigil, deleteSigil,
   listSkills, getSkill, createSkill, updateSkill, deleteSkill,
-  getSetting, setSetting,
+  getSetting, setSetting, listSettingsByPrefix,
   getDraft, saveDraft,
   getMemoryPath, loadMemory, saveMemory,
   listMcpServers, getMcpServer, createMcpServer, updateMcpServer, deleteMcpServer, setMcpServerEnabled,

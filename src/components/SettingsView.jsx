@@ -150,6 +150,9 @@ export default function SettingsView({
   const [mcpConnecting, setMcpConnecting] = useState(null)
   const memoryLoaded = useRef(false)
 
+  // Tool permissions
+  const [alwaysAllowedTools, setAlwaysAllowedTools] = useState([])
+
   useEffect(() => {
     async function load() {
       try {
@@ -196,9 +199,23 @@ export default function SettingsView({
       } catch (err) {
         console.error('[Settings] MCP load failed:', err)
       }
+
+      // Tool permissions
+      try {
+        const allowed = await api.tools.getAlwaysAllowed()
+        setAlwaysAllowedTools(allowed ?? [])
+      } catch (err) {
+        console.error('[Settings] tool permissions load failed:', err)
+      }
     }
     load()
   }, [])
+
+  async function handleRevokeAlwaysAllow(name) {
+    await api.tools.revokeAlwaysAllow(name)
+    const allowed = await api.tools.getAlwaysAllowed()
+    setAlwaysAllowedTools(allowed ?? [])
+  }
 
   useEffect(() => {
     async function loadModelSizes() {
@@ -814,6 +831,38 @@ export default function SettingsView({
                 <span className="material-symbols-outlined text-[18px]">add</span>
                 Add MCP Server
               </button>
+            )}
+          </div>
+        </section>
+
+        {/* Tool permissions */}
+        <section className={card}>
+          <div className={cardHeader}>
+            <span className="material-symbols-outlined text-primary text-[20px]">verified_user</span>
+            <h3 className="text-title-md font-medium text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Tool Permissions</h3>
+          </div>
+          <div className={cardBody}>
+            <p className="text-label-md text-on-surface-variant mb-4">
+              Destructive tools (writing files, creating directories, git commits/pushes, and MCP tools) ask for approval before running.
+              Choosing "Always allow" grants standing approval — manage those grants here.
+            </p>
+            {alwaysAllowedTools.length === 0 ? (
+              <p className="text-[12px] text-on-surface-variant/50">No tools have been granted standing approval.</p>
+            ) : (
+              <div className="divide-y divide-outline-variant border border-outline-variant rounded-xl overflow-hidden">
+                {alwaysAllowedTools.map(name => (
+                  <div key={name} className="px-4 py-3 flex items-center justify-between bg-surface">
+                    <span className="font-mono text-[13px] text-on-surface">{name}</span>
+                    <button
+                      onClick={() => handleRevokeAlwaysAllow(name)}
+                      className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                      style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: 'rgb(255,140,140)' }}
+                    >
+                      Revoke
+                    </button>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </section>

@@ -95,6 +95,9 @@ contextBridge.exposeInMainWorld('golem', {
     offStreamStats:  ()        => ipcRenderer.removeAllListeners('ollama:streamStats'),
     onLoopStatus:    (cb)      => ipcRenderer.on('ollama:loopStatus', (_, data) => cb(data)),
     offLoopStatus:   ()        => ipcRenderer.removeAllListeners('ollama:loopStatus'),
+    onToolApprovalRequest:  (cb) => ipcRenderer.on('ollama:tool_approval_request', (_, payload) => cb(payload)),
+    offToolApprovalRequest: ()   => ipcRenderer.removeAllListeners('ollama:tool_approval_request'),
+    respondToolApproval:    (id, decision) => ipcRenderer.send('ollama:toolApprovalResponse', { id, decision }),
     testToolCapability: (model) => ipcRenderer.invoke('ollama:testToolCapability', model),
     getToolCapability:  (model) => ipcRenderer.invoke('ollama:getToolCapability', model),
     generateTitle:      (model, messages) => ipcRenderer.invoke('ollama:generateTitle', { model, messages }),
@@ -105,6 +108,10 @@ contextBridge.exposeInMainWorld('golem', {
   system: {
     getHardwareInfo: () => ipcRenderer.invoke('system:getHardwareInfo'),
     platform:        () => ipcRenderer.invoke('system:platform'),
+  },
+  tools: {
+    getAlwaysAllowed:  ()     => ipcRenderer.invoke('tools:getAlwaysAllowed'),
+    revokeAlwaysAllow: (name) => ipcRenderer.invoke('tools:revokeAlwaysAllow', name),
   },
   mcp: {
     listServers:         ()                              => ipcRenderer.invoke('mcp:listServers'),

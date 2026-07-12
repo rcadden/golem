@@ -680,6 +680,18 @@ ipcMain.handle('db:getTelemetrySummary', () => db.getTelemetrySummary())
 
 const MAX_TOOL_ITERATIONS = 4
 
+// ── Tool approval gate ────────────────────────────────────────────────────────
+// A subset of tools can mutate state or reach out to arbitrary MCP servers —
+// those require explicit user approval before execution, unless the user has
+// previously granted standing approval ("always allow") for that tool name.
+const APPROVAL_REQUIRED_TOOLS = new Set(['write_file', 'create_directory', 'git_commit', 'git_push'])
+function toolNeedsApproval(name) {
+  return APPROVAL_REQUIRED_TOOLS.has(name) || name.startsWith('mcp__')
+}
+
+// callId -> resolve fn, for tool calls awaiting a user decision
+const pendingApprovals = new Map()
+
 // Trims the message array to fit within a char-based approximation of the model's
 // context budget, always preserving the system message (index 0) and never dropping
 // the most recent message. Returns { messages, dropped } — dropped is the count of
@@ -934,6 +946,43 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
           try { args = JSON.parse(rawArgs) } catch { args = {} }
         }
 
+        // Determine the approval decision up front — non-gated tools are
+        // implicitly approved; gated tools either have standing approval,
+        // or we must ask the user and wait.
+        let decision = 'approve'
+        if (toolNeedsApproval(name)) {
+          const alwaysAllowed = db.getSetting(`tool_always_allow_${name}`, 'false') === 'true'
+          if (alwaysAllowed) {
+            decision = 'always'
+          } else {
+            event.sender.send('ollama:tool_approval_request', { id: callId, name, args, conversationId })
+            decision = await new Promise(resolve => {
+              pendingApprovals.set(callId, resolve)
+              setTimeout(() => {
+                if (pendingApprovals.has(callId)) { pendingApprovals.delete(callId); resolve('deny') }
+              }, 5 * 60 * 1000)
+            })
+            if (controller.abort) decision = 'deny'
+          }
+        }
+
+        if (decision === 'always') {
+          db.setSetting(`tool_always_allow_${name}`, 'true')
+        }
+
+        if (decision === 'deny') {
+          const resultPayload = { error: 'User denied this tool call.' }
+          const resultJson = JSON.stringify(resultPayload)
+
+          event.sender.send('ollama:tool_call_result', { id: callId, name, result: resultPayload, isError: true, denied: true, conversationId })
+
+          if (payload.conversationId) {
+            db.addMessage(payload.conversationId, 'tool', resultJson, { toolCallId: callId })
+          }
+          messages.push({ role: 'tool', tool_call_id: callId, content: resultJson })
+          continue
+        }
+
         event.sender.send('ollama:tool_call_start', { id: callId, name, args, conversationId })
 
         let resultPayload
@@ -1005,6 +1054,25 @@ ipcMain.handle('ollama:getActiveStream', () => activeStreamConversationId)
 
 ipcMain.on('ollama:stopStream', () => {
   if (activeStreamController) activeStreamController.abort = true
+  // Stopping a stream must not leave the tool loop hanging on an approval.
+  for (const resolve of pendingApprovals.values()) resolve('deny')
+  pendingApprovals.clear()
+})
+
+ipcMain.on('ollama:toolApprovalResponse', (_, { id, decision }) => {
+  const resolve = pendingApprovals.get(id)
+  if (resolve) { pendingApprovals.delete(id); resolve(decision) }
+})
+
+ipcMain.handle('tools:getAlwaysAllowed', () => {
+  const prefix = 'tool_always_allow_'
+  return db.listSettingsByPrefix(prefix)
+    .filter(row => row.value === 'true')
+    .map(row => row.key.slice(prefix.length))
+})
+
+ipcMain.handle('tools:revokeAlwaysAllow', (_, name) => {
+  db.setSetting(`tool_always_allow_${name}`, 'false')
 })
 
 // ── Auto-title ────────────────────────────────────────────────────────────────

@@ -178,19 +178,32 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     })
 
+    api.ollama.onToolApprovalRequest(payload => {
+      if (payload?.conversationId !== conv?.id) return
+      const { id, name, args } = payload
+      setLiveSegments(prev => [...prev, { type: 'tool', id, name, args, isRunning: false, needsApproval: true }])
+      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    })
+
     api.ollama.onToolCallStart(payload => {
       if (payload?.conversationId !== conv?.id) return
       const { id, name, args } = payload
-      setLiveSegments(prev => [...prev, { type: 'tool', id, name, args, isRunning: true }])
+      setLiveSegments(prev => {
+        const existing = prev.find(s => s.type === 'tool' && s.id === id)
+        if (existing) {
+          return prev.map(s => s.type === 'tool' && s.id === id ? { ...s, needsApproval: false, isRunning: true } : s)
+        }
+        return [...prev, { type: 'tool', id, name, args, isRunning: true }]
+      })
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     })
 
     api.ollama.onToolCallResult(payload => {
       if (payload?.conversationId !== conv?.id) return
-      const { id, result, isError } = payload
+      const { id, result, isError, denied } = payload
       setLiveSegments(prev => prev.map(s =>
         s.type === 'tool' && s.id === id
-          ? { ...s, result, isError, isRunning: false }
+          ? { ...s, result, isError, isRunning: false, denied, needsApproval: false }
           : s
       ))
     })
@@ -249,6 +262,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     return () => {
       api.ollama.offChunk()
       api.ollama.offStreamEnd()
+      api.ollama.offToolApprovalRequest()
       api.ollama.offToolCallStart()
       api.ollama.offToolCallResult()
       api.ollama.offStreamStats()
@@ -520,6 +534,13 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     api.ollama.stopStream()
   }
 
+  function respondToApproval(id, decision) {
+    api.ollama.respondToolApproval(id, decision)
+    setLiveSegments(prev => prev.map(s =>
+      s.type === 'tool' && s.id === id ? { ...s, needsApproval: false, isRunning: decision !== 'deny' } : s
+    ))
+  }
+
   function handleKeyDown(e) {
     if (mentionQuery !== null) {
       const filtered = projectFiles.filter(f => 
@@ -665,6 +686,9 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                 result={s.result}
                 isError={s.isError}
                 isRunning={s.isRunning}
+                needsApproval={s.needsApproval}
+                denied={s.denied}
+                onApprove={(decision) => respondToApproval(s.id, decision)}
               />
             )
           ))}

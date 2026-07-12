@@ -46,7 +46,7 @@ function CodeBlock({ language, code }) {
   )
 }
 
-export function ToolCard({ name, args, result, isError, isRunning, onAction }) {
+export function ToolCard({ name, args, result, isError, isRunning, needsApproval, denied, onApprove, onAction }) {
   const [expanded, setExpanded] = useState(false)
 
   const argsStr = (() => {
@@ -61,12 +61,22 @@ export function ToolCard({ name, args, result, isError, isRunning, onAction }) {
     try { return JSON.stringify(result, null, 2) } catch { return String(result) }
   })()
 
-  const statusColor = isRunning
-    ? 'rgba(180,180,200,0.7)'
-    : isError
-      ? 'rgb(255,140,140)'
-      : 'var(--accent-light)'
-  const statusIcon = isRunning ? 'progress_activity' : isError ? 'error' : 'check_circle'
+  const statusColor = denied
+    ? 'rgb(255,140,140)'
+    : needsApproval
+      ? 'rgba(180,180,200,0.7)'
+      : isRunning
+        ? 'rgba(180,180,200,0.7)'
+        : isError
+          ? 'rgb(255,140,140)'
+          : 'var(--accent-light)'
+  const statusIcon = denied
+    ? 'block'
+    : needsApproval
+      ? 'pending'
+      : isRunning
+        ? 'progress_activity'
+        : isError ? 'error' : 'check_circle'
 
   return (
     <div className="flex items-start gap-4 mb-4 px-1">
@@ -94,10 +104,45 @@ export function ToolCard({ name, args, result, isError, isRunning, onAction }) {
               {argsStr}
             </span>
           )}
+          {denied && (
+            <span className="text-[11px] font-medium" style={{ color: 'rgb(255,140,140)' }}>Denied</span>
+          )}
           <span className="ml-auto material-symbols-outlined text-[14px] text-on-surface-variant/50">
             {expanded ? 'expand_less' : 'expand_more'}
           </span>
         </button>
+
+        {needsApproval && (
+          <div
+            className="mt-1 px-3 py-2.5 rounded-lg flex items-center justify-between gap-3"
+            style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
+          >
+            <span className="text-[11px] text-on-surface-variant">Golem wants to run this tool</span>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                onClick={() => onApprove?.('deny')}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                style={{ background: 'rgba(239,68,68,0.12)', border: '1px solid rgba(239,68,68,0.3)', color: 'rgb(255,140,140)' }}
+              >
+                Deny
+              </button>
+              <button
+                onClick={() => onApprove?.('always')}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-mid)', color: 'var(--text-secondary)' }}
+              >
+                Always allow
+              </button>
+              <button
+                onClick={() => onApprove?.('approve')}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-colors"
+                style={{ background: 'rgba(var(--accent-rgb),0.15)', border: '1px solid rgba(var(--accent-rgb),0.3)', color: 'var(--accent-light)' }}
+              >
+                Allow
+              </button>
+            </div>
+          </div>
+        )}
 
         {expanded && (
           <div className="mt-1 pl-3 pr-2 py-2 rounded-lg space-y-2"
