@@ -82,7 +82,7 @@ const SUGGESTIONS = [
   { icon: 'code_blocks',   label: 'Review my code',    prompt: 'Review my code for improvements.' },
 ]
 
-export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvUpdate, onGolemAction, pendingInput, onConsumePendingInput }) {
+export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvUpdate, onGolemAction, pendingInput, onConsumePendingInput, onNewChatWithPrompt, onOpenLibrary }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
@@ -633,7 +633,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
               {SUGGESTIONS.map(s => (
                 <button
                   key={s.label}
-                  onClick={onNewChat}
+                  onClick={() => onNewChatWithPrompt(s.prompt)}
                   className="bg-surface hover:bg-surface-container-high border border-outline-variant hover:border-primary/30 p-5 rounded-xl text-left transition-all group"
                 >
                   <span className="material-symbols-outlined text-primary text-[24px] mb-2 block"
@@ -643,6 +643,16 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
                 </button>
               ))}
             </div>
+            <button
+              onClick={onOpenLibrary}
+              className="flex items-center gap-1.5 mt-8 text-[13px] transition-colors"
+              style={{ color: 'var(--text-muted)' }}
+              onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-light)'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+            >
+              Browse sigils & skills in the Library
+              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+            </button>
           </div>
         )}
       </div>

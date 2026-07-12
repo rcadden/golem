@@ -5,6 +5,8 @@ import {
   TAG_LABEL, TAG_COLOR,
   TOOLS_COLOR,
 } from '../data/models-catalog'
+import SigilModal from './SigilModal'
+import SkillModal from './SkillModal'
 
 const api = window.golem
 
@@ -103,9 +105,227 @@ function InstalledTab({ models, hardware, onRefresh }) {
   )
 }
 
+// ── Sigils Tab ───────────────────────────────────────────────────────────────
+
+function SigilsTab({ sigils, onNewChatWithSigil, onSigilsChange }) {
+  const [modal, setModal] = useState(null) // null | { sigil: null|obj }
+
+  async function handleSave(id, name, content) {
+    if (id) {
+      await api.db.updateSigil(id, name, content)
+    } else {
+      await api.db.createSigil(name, content)
+    }
+    await onSigilsChange()
+  }
+
+  async function handleDelete(id) {
+    await api.db.deleteSigil(id)
+    await onSigilsChange()
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto px-8 pb-8">
+      <div className="flex items-center justify-between mb-4 mt-2">
+        <div>
+          <h2 className="text-[16px] font-semibold text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Sigils</h2>
+          <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Named system prompts applied to every conversation.
+          </p>
+        </div>
+        <button
+          onClick={() => setModal({ sigil: null })}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+          style={{ background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
+        >
+          <span className="material-symbols-outlined text-[14px]">add</span>
+          New sigil
+        </button>
+      </div>
+
+      {sigils.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 mt-16 text-center">
+          <span className="material-symbols-outlined text-[40px]" style={{ color: 'var(--text-faint)' }}>auto_fix_high</span>
+          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+            No sigils yet. Create one to get started.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+          {sigils.map(sigil => (
+            <div key={sigil.id}
+              className="rounded-xl p-4 flex flex-col gap-3"
+              style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+              <div className="flex items-start gap-2">
+                <span className="material-symbols-outlined text-[16px] shrink-0" style={{ color: 'var(--accent)', fontVariationSettings: "'FILL' 1" }}>
+                  auto_fix_high
+                </span>
+                <span className="text-[14px] font-medium text-on-surface truncate flex-1">{sigil.name}</span>
+              </div>
+              <p className="text-[12px] leading-relaxed flex-1" style={{ color: 'var(--text-secondary)' }}>
+                {sigil.content.slice(0, 120)}{sigil.content.length > 120 ? '…' : ''}
+              </p>
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  onClick={() => onNewChatWithSigil(sigil.id)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+                  style={{ background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
+                >
+                  <span className="material-symbols-outlined text-[13px]">add</span>
+                  New chat
+                </button>
+                <button
+                  onClick={() => setModal({ sigil })}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: 'var(--text-secondary)', background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)' }}
+                  title="Edit"
+                >
+                  <span className="material-symbols-outlined text-[15px]">edit</span>
+                </button>
+                <button
+                  onClick={() => handleDelete(sigil.id)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                  style={{ color: 'rgba(220,100,100,0.7)', background: 'rgba(220,70,70,0.08)', border: '1px solid rgba(220,70,70,0.2)' }}
+                  title="Delete"
+                >
+                  <span className="material-symbols-outlined text-[15px]">delete</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modal && (
+        <SigilModal
+          sigil={modal.sigil}
+          onSave={handleSave}
+          onClose={() => setModal(null)}
+        />
+      )}
+    </div>
+  )
+}
+
+// ── Skills Tab ───────────────────────────────────────────────────────────────
+
+function SkillsTab({ skills, onNewChatWithSkill, onSkillsChange }) {
+  const [modal, setModal] = useState(null) // null | 'new' | skillId
+
+  async function handleDelete(id) {
+    await api.db.deleteSkill(id)
+    await onSkillsChange()
+  }
+
+  const grouped = Object.entries(
+    skills.reduce((acc, skill) => {
+      const cat = skill.category || 'General'
+      if (!acc[cat]) acc[cat] = []
+      acc[cat].push(skill)
+      return acc
+    }, {})
+  )
+
+  return (
+    <div className="flex-1 overflow-y-auto px-8 pb-8">
+      <div className="flex items-center justify-between mb-4 mt-2">
+        <div>
+          <h2 className="text-[16px] font-semibold text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Skills</h2>
+          <p className="text-[12px] mt-0.5" style={{ color: 'var(--text-muted)' }}>
+            Reusable prompts with optional starter messages, grouped by category.
+          </p>
+        </div>
+        <button
+          onClick={() => setModal('new')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+          style={{ background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
+        >
+          <span className="material-symbols-outlined text-[14px]">add</span>
+          New skill
+        </button>
+      </div>
+
+      {skills.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 mt-16 text-center">
+          <span className="material-symbols-outlined text-[40px]" style={{ color: 'var(--text-faint)' }}>auto_awesome</span>
+          <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+            No skills yet. Create one to get started.
+          </p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {grouped.map(([cat, catSkills]) => (
+            <div key={cat}>
+              <div className="text-[11px] uppercase tracking-widest mb-2" style={{ color: 'var(--text-faint)' }}>{cat}</div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                {catSkills.map(skill => (
+                  <div key={skill.id}
+                    className="rounded-xl p-4 flex flex-col gap-3"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}>
+                    <div className="flex items-start gap-2 flex-wrap">
+                      <span className="material-symbols-outlined text-[16px] shrink-0" style={{ color: 'var(--accent)', fontVariationSettings: "'FILL' 1" }}>
+                        auto_awesome
+                      </span>
+                      <span className="text-[14px] font-medium text-on-surface truncate flex-1">{skill.name}</span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'var(--bg-input)', color: 'var(--text-secondary)' }}>
+                        {skill.category || 'General'}
+                      </span>
+                    </div>
+                    <p className="text-[12px] leading-relaxed flex-1" style={{ color: 'var(--text-secondary)' }}>
+                      {(skill.system_prompt || '').slice(0, 120)}{(skill.system_prompt || '').length > 120 ? '…' : ''}
+                    </p>
+                    <div className="flex items-center gap-2 pt-1">
+                      <button
+                        onClick={() => onNewChatWithSkill(skill.id)}
+                        className="flex-1 flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-all"
+                        style={{ background: 'rgba(var(--accent-rgb),0.15)', color: 'var(--accent-light)', border: '1px solid rgba(var(--accent-rgb),0.3)' }}
+                      >
+                        <span className="material-symbols-outlined text-[13px]">add</span>
+                        New chat
+                      </button>
+                      <button
+                        onClick={() => setModal(skill.id)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                        style={{ color: 'var(--text-secondary)', background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)' }}
+                        title="Edit"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                      </button>
+                      <button
+                        onClick={() => handleDelete(skill.id)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                        style={{ color: 'rgba(220,100,100,0.7)', background: 'rgba(220,70,70,0.08)', border: '1px solid rgba(220,70,70,0.2)' }}
+                        title="Delete"
+                      >
+                        <span className="material-symbols-outlined text-[15px]">delete</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {modal && (
+        <SkillModal
+          skillId={modal === 'new' ? null : modal}
+          onClose={() => setModal(null)}
+          onSaved={onSkillsChange}
+        />
+      )}
+    </div>
+  )
+}
+
 // ── Library View ──────────────────────────────────────────────────────────────
 
-export default function LibraryView({ pulling, pullModel: activePullModel, pullProgress, onPull, remoteCatalog, catalogMeta, onRefreshCatalog }) {
+export default function LibraryView({
+  pulling, pullModel: activePullModel, pullProgress, onPull, remoteCatalog, catalogMeta, onRefreshCatalog,
+  sigils = [], skills = [], onNewChatWithSigil, onNewChatWithSkill, onSigilsChange, onSkillsChange,
+}) {
+  const [libraryTab, setLibraryTab] = useState('models')
   const [tab, setTab] = useState('browse')
   const [hardware, setHardware] = useState(null)
   const [installedModels, setInstalledModels] = useState([])
@@ -189,8 +409,42 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
 
   return (
     <div className="flex flex-col h-full" style={{ background: 'var(--bg-base)' }}>
+      {/* Top-level tabs */}
+      <div className="px-8 pt-6 flex items-center gap-1 shrink-0" style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+        {[['models', 'Models'], ['sigils', 'Sigils'], ['skills', 'Skills']].map(([v, l]) => (
+          <button
+            key={v}
+            onClick={() => setLibraryTab(v)}
+            className="relative px-4 py-2.5 text-[13px] font-medium transition-colors"
+            style={{ color: libraryTab === v ? 'var(--accent-light)' : 'var(--text-secondary)' }}
+          >
+            {l}
+            {libraryTab === v && (
+              <div className="absolute left-0 right-0 bottom-0 h-[2px] rounded-full" style={{ background: 'var(--accent)' }} />
+            )}
+          </button>
+        ))}
+      </div>
+
+      {libraryTab === 'sigils' && (
+        <SigilsTab
+          sigils={sigils}
+          onNewChatWithSigil={onNewChatWithSigil}
+          onSigilsChange={onSigilsChange}
+        />
+      )}
+
+      {libraryTab === 'skills' && (
+        <SkillsTab
+          skills={skills}
+          onNewChatWithSkill={onNewChatWithSkill}
+          onSkillsChange={onSkillsChange}
+        />
+      )}
+
+      {libraryTab === 'models' && (<>
       {/* Header */}
-      <div className="px-8 pt-8 pb-4">
+      <div className="px-8 pt-6 pb-4">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-[22px] font-bold text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Model Library</h1>
@@ -430,6 +684,7 @@ export default function LibraryView({ pulling, pullModel: activePullModel, pullP
           </button>
         </div>
       )}
+      </>)}
     </div>
   )
 }

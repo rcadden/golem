@@ -224,6 +224,16 @@ export default function App() {
     setView('chat')
   }
 
+  async function handleNewChatWithPrompt(prompt) {
+    const model = await getDefaultModel()
+    if (!model) return
+    const id = await api.db.createConversation('New Chat', model, null, null)
+    await refreshConversations()
+    setActiveConvId(id)
+    setPendingInput(prompt)
+    setView('chat')
+  }
+
   async function handleNewChatInProject(projectId) {
     const model = await getDefaultModel()
     if (!model) return
@@ -338,12 +348,8 @@ export default function App() {
             conversations={conversations}
             activeConvId={activeConvId}
             activeView={view}
-            sigils={sigils}
-            skills={skills}
             projects={projects}
             onNewChat={handleNewChat}
-            onNewChatWithSigil={handleNewChatWithSigil}
-            onNewChatWithSkill={handleNewChatWithSkill}
             onNewChatInProject={handleNewChatInProject}
             onSelectConv={handleSelectConv}
             onDeleteConv={handleDeleteConv}
@@ -352,8 +358,6 @@ export default function App() {
             onUnpinConv={handleUnpinConv}
             onExportConv={handleExportConv}
             onSetView={setView}
-            onSigilsChange={refreshSigils}
-            onSkillsChange={refreshSkills}
             onProjectsChange={refreshProjects}
           />
         )}
@@ -385,6 +389,8 @@ export default function App() {
               }}
               pendingInput={pendingInput}
               onConsumePendingInput={() => setPendingInput('')}
+              onNewChatWithPrompt={handleNewChatWithPrompt}
+              onOpenLibrary={() => setView('library')}
             />
           )}
           {view === 'settings' && (
@@ -406,6 +412,12 @@ export default function App() {
               remoteCatalog={remoteCatalog}
               catalogMeta={catalogMeta}
               onRefreshCatalog={() => refreshCatalog(true)}
+              sigils={sigils}
+              skills={skills}
+              onNewChatWithSigil={handleNewChatWithSigil}
+              onNewChatWithSkill={handleNewChatWithSkill}
+              onSigilsChange={refreshSigils}
+              onSkillsChange={refreshSkills}
             />
           )}
         </main>
