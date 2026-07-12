@@ -811,7 +811,6 @@ export default function Sidebar({
           {navItem('Library', 'collections_bookmark', 'library')}
           {navItem('Stats', 'bar_chart', 'stats')}
           {navItem('Settings', 'settings', 'settings')}
-          {navItem('Help', 'help', 'help')}
         </div>
       </nav>
 
