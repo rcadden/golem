@@ -419,4 +419,4 @@ async function execute(name, args, ctx = {}) {
   throw new Error(`Unknown tool: ${name}`)
 }
 
-module.exports = { listSchemas, execute }
+module.exports = { listSchemas, execute, resolveSafe }

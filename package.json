@@ -50,7 +50,8 @@
     "asar": true,
     "asarUnpack": [
       "node_modules/sql.js/dist/sql-wasm.js",
-      "node_modules/sql.js/dist/sql-wasm.wasm"
+      "node_modules/sql.js/dist/sql-wasm.wasm",
+      "public/icon.png"
     ],
     "directories": {
       "output": "dist-electron"
@@ -58,6 +59,7 @@
     "files": [
       "dist/**/*",
       "electron/**/*",
+      "public/icon.png",
       "node_modules/**/*",
       "!node_modules/electron/dist/**",
       "!node_modules/sql.js/dist/sql-asm*",

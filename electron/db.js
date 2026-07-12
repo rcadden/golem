@@ -15,6 +15,7 @@ const MEMORY_PATH = path.join(DATA_DIR, 'memory.txt')
 fs.mkdirSync(DATA_DIR, { recursive: true })
 
 let db = null
+let persistTimer = null
 
 async function init() {
   const initSqlJs = require('sql.js')
@@ -148,7 +149,7 @@ async function init() {
 
   seedBuiltinSkills()
   seedStarterPack()
-  persist()
+  persistNow()
 }
 
 function seedBuiltinSkills() {
@@ -234,9 +235,19 @@ function seedStarterPack() {
   setSetting(versionKey, '1')
 }
 
-function persist() {
+function persistNow() {
   if (!db) return
   fs.writeFileSync(DB_PATH, Buffer.from(db.export()))
+}
+
+function persist() {
+  clearTimeout(persistTimer)
+  persistTimer = setTimeout(persistNow, 300)
+}
+
+function flush() {
+  clearTimeout(persistTimer)
+  persistNow()
 }
 
 function run(sql, params = []) {
@@ -279,6 +290,7 @@ function renameProject(id, name) {
 }
 
 function deleteProject(id) {
+  run('DELETE FROM mcp_server_projects WHERE project_id = ?', [id])
   run('DELETE FROM projects WHERE id = ?', [id])
 }
 
@@ -368,7 +380,7 @@ function setConversationParams(id, { temperature, numCtx }) {
 // ── Messages ──────────────────────────────────────────────────────────────────
 
 function getMessages(convId) {
-  return all('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC', [convId])
+  return all('SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC, id ASC', [convId])
 }
 
 function addMessage(convId, role, content, opts = {}) {
@@ -539,6 +551,7 @@ function updateMcpServer(id, name, command, argsJson, envJson) {
 }
 
 function deleteMcpServer(id) {
+  run('DELETE FROM mcp_server_projects WHERE mcp_server_id = ?', [id])
   run('DELETE FROM mcp_servers WHERE id = ?', [id])
 }
 
@@ -598,6 +611,7 @@ function searchMessages(query) {
 module.exports = {
   setConversationParams,
   init,
+  flush,
   logTelemetry, getTelemetrySummary,
   listProjects, createProject, renameProject, deleteProject,
   getProject, setProjectDirectory, setProjectNumCtx, clearProjectFiles,

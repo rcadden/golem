@@ -14,6 +14,7 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 let mainWindow
 let activeStreamController = null
+let resizeSaveTimer = null
 
 let tray = null
 let trayEnabled = true
@@ -52,9 +53,13 @@ function createWindow() {
   }
 
   mainWindow.on('resize', () => {
-    const [width, height] = mainWindow.getSize()
-    db.setSetting('window_width',  String(width))
-    db.setSetting('window_height', String(height))
+    clearTimeout(resizeSaveTimer)
+    resizeSaveTimer = setTimeout(() => {
+      if (!mainWindow || mainWindow.isDestroyed()) return
+      const [width, height] = mainWindow.getSize()
+      db.setSetting('window_width',  String(width))
+      db.setSetting('window_height', String(height))
+    }, 500)
   })
 
   mainWindow.on('maximize',   () => mainWindow.webContents.send('window:maximizeChange', true))
@@ -214,7 +219,7 @@ app.whenReady().then(async () => {
     mcpManager.connectAll(servers).catch(() => {})
   }
 })
-app.on('will-quit', () => globalShortcut.unregisterAll())
+app.on('will-quit', () => { globalShortcut.unregisterAll(); db.flush() })
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit() })
 app.on('activate', () => { if (BrowserWindow.getAllWindows().length === 0) createWindow() })
 
@@ -263,7 +268,7 @@ ipcMain.handle('project:readFile', async (_, projectId, relPath) => {
   if (!project) return null
   if (project.directory_path) {
     try {
-      const fullPath = resolveSafe(project.directory_path, relPath)
+      const fullPath = tools.resolveSafe(project.directory_path, relPath)
       if (fs.existsSync(fullPath) && !fs.statSync(fullPath).isDirectory()) {
         return fs.readFileSync(fullPath, 'utf8')
       }
@@ -498,7 +503,6 @@ const TOOL_CAPABLE_PATTERNS = [
   /^command-r/i,
   /^firefunction/i,
   /^granite3/i,
-  /^gemma4/i,
 ]
 
 function modelNameMatchesAllowlist(model) {
@@ -677,7 +681,7 @@ const MAX_TOOL_ITERATIONS = 4
 
 // One round-trip to Ollama. Streams content chunks via 'ollama:chunk' and resolves
 // with { content, toolCalls, promptTokens, completionTokens, ttftMs }.
-function streamOnce({ event, model, messages, toolSchemas, controller, streamStart, ttftRef, numCtx = 16384, temperature = 0.7 }) {
+function streamOnce({ event, model, messages, toolSchemas, controller, streamStart, ttftRef, numCtx = 8192, temperature = 0.7 }) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model,
