@@ -109,9 +109,11 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   const [mentionStartIndex, setMentionStartIndex] = useState(-1)
   const [selectedMentionIndex, setSelectedMentionIndex] = useState(0)
   const bottomRef = useRef(null)
+  const scrollContainerRef = useRef(null)
   const textareaRef = useRef(null)
   const elapsedIntervalRef = useRef(null)
   const saveDraftTimerRef = useRef(null)
+  const prevMsgCountRef = useRef(0)
 
   useEffect(() => {
     if (conv?.project_id) {
@@ -130,6 +132,13 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     let cancelled = false
     api.ollama.getToolCapability(selectedModel).then(cap => {
       if (!cancelled) setToolCap(cap)
+      if (!cancelled && cap === null) {
+        // Unknown capability — warm the cache with a probe now so the send
+        // path doesn't have to block on it later.
+        api.ollama.testToolCapability(selectedModel).then(result => {
+          if (!cancelled) setToolCap(result)
+        })
+      }
     })
     return () => { cancelled = true }
   }, [selectedModel])
@@ -161,6 +170,12 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     load()
   }, [conv?.id])
 
+  function isNearBottom() {
+    const el = scrollContainerRef.current
+    if (!el) return true
+    return el.scrollHeight - el.scrollTop - el.clientHeight < 120
+  }
+
   useEffect(() => {
     api.ollama.onChunk(payload => {
       if (payload?.conversationId !== conv?.id) return
@@ -175,14 +190,14 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
         }
         return next
       })
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      if (isNearBottom()) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     })
 
     api.ollama.onToolApprovalRequest(payload => {
       if (payload?.conversationId !== conv?.id) return
       const { id, name, args } = payload
       setLiveSegments(prev => [...prev, { type: 'tool', id, name, args, isRunning: false, needsApproval: true }])
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      if (isNearBottom()) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     })
 
     api.ollama.onToolCallStart(payload => {
@@ -195,7 +210,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
         }
         return [...prev, { type: 'tool', id, name, args, isRunning: true }]
       })
-      bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+      if (isNearBottom()) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     })
 
     api.ollama.onToolCallResult(payload => {
@@ -295,7 +310,12 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   }, [streaming])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'instant' })
+    const lastIsUser = messages[messages.length - 1]?.role === 'user'
+    const initialLoad = prevMsgCountRef.current === 0 && messages.length > 0
+    prevMsgCountRef.current = messages.length
+    if (initialLoad || lastIsUser || isNearBottom()) {
+      bottomRef.current?.scrollIntoView({ behavior: 'instant' })
+    }
   }, [messages])
 
   useEffect(() => {
@@ -648,7 +668,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-6 py-8" style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(var(--accent-rgb),0.05) 0%, transparent 60%)' }}>
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-6 py-8" style={{ backgroundImage: 'radial-gradient(ellipse at 50% 0%, rgba(var(--accent-rgb),0.05) 0%, transparent 60%)' }}>
         <div className="max-w-[860px] mx-auto">
           {renderItems.map(item => (
             item.kind === 'tool' ? (

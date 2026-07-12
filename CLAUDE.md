@@ -8,14 +8,14 @@ A fast, private, local-first AI chat desktop app powered by Ollama. No cloud, no
 - **UI:** React 19 + Vite 5 + Tailwind CSS 3
 - **Data:** sql.js (WASM SQLite) — `app.getPath('userData')` in production, `data/` in dev
 - **AI:** Ollama (local streaming via Node.js http)
-- **Fonts:** Hanken Grotesk (display), Inter (body), JetBrains Mono (code) — Google CDN
-- **Icons:** Material Symbols Outlined — Google CDN
+- **Fonts:** Hanken Grotesk (display), Inter (body), JetBrains Mono (code) — bundled via @fontsource
+- **Icons:** Material Symbols Outlined — bundled via npm
 - **Packaging:** electron-builder, NSIS installer (Windows x64)
 
 ## Architecture
 - **IPC pattern:** `contextBridge` exposes `window.golem.*` in preload → `ipcMain.handle` in main
 - **Streaming:** Ollama chunks pushed via `event.sender.send('ollama:chunk')`, done message has exact token counts
-- **Data layer:** `electron/db.js` — all writes call `persist()` immediately after
+- **Data layer:** `electron/db.js` — writes schedule a debounced `persist()` (300ms); `flush()` runs on will-quit
 - **System prompt:** sigil content + memory + project files injected in `electron/main.js` before streaming
 
 ## Key Files

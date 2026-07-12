@@ -546,10 +546,15 @@ async function getToolCapability(model) {
     db.setSetting(`tool_capable_${model}`, 'true')
     return true
   }
-  // Fall back to a live probe and cache the result
-  const result = await probeToolCapability(model)
-  db.setSetting(`tool_capable_${model}`, result ? 'true' : 'false')
-  return result
+  // Unknown and not on the allowlist — don't block the send path on a live
+  // probe (up to 60s). Kick the probe off in the background so the cache is
+  // warm by the next message, and answer "no tools" for this one. ChatView
+  // also warms this cache proactively on model selection, so in practice the
+  // probe usually finishes before the user's first message anyway.
+  probeToolCapability(model).then(result => {
+    db.setSetting(`tool_capable_${model}`, result ? 'true' : 'false')
+  })
+  return false
 }
 
 ipcMain.handle('ollama:testToolCapability', async (_, model) => {
