@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import ColorPicker from './ColorPicker'
+import ConfirmDialog from './ConfirmDialog'
 import { applyAccentColor } from '../utils/accent'
 
 const api = window.golem
@@ -148,6 +149,7 @@ export default function SettingsView({
   const [mcpWizard, setMcpWizard] = useState(BLANK_WIZARD)
   const [mcpFormOpen, setMcpFormOpen] = useState(false)
   const [mcpConnecting, setMcpConnecting] = useState(null)
+  const [confirmRemoveServer, setConfirmRemoveServer] = useState(null) // null | server
   const memoryLoaded = useRef(false)
 
   // Tool permissions
@@ -339,7 +341,6 @@ export default function SettingsView({
   }
 
   async function handleMcpRemove(id) {
-    if (!window.confirm('Remove this MCP server?')) return
     await api.mcp.removeServer(id)
     setMcpServers(prev => prev.filter(s => s.id !== id))
     setMcpStatus(prev => { const n = { ...prev }; delete n[id]; return n })
@@ -622,7 +623,7 @@ export default function SettingsView({
                           )}
                           {/* Remove */}
                           <button
-                            onClick={() => handleMcpRemove(server.id)}
+                            onClick={() => setConfirmRemoveServer(server)}
                             className="p-1 rounded text-on-surface-variant hover:text-error transition-colors"
                             title="Remove server"
                           >
@@ -1072,6 +1073,16 @@ export default function SettingsView({
           </button>
         </div>
       </div>
+
+      {confirmRemoveServer && (
+        <ConfirmDialog
+          title="Remove MCP server?"
+          message={`"${confirmRemoveServer.name}" will be disconnected and removed from Golem.`}
+          confirmLabel="Remove"
+          onConfirm={() => { const id = confirmRemoveServer.id; setConfirmRemoveServer(null); handleMcpRemove(id) }}
+          onCancel={() => setConfirmRemoveServer(null)}
+        />
+      )}
     </div>
   )
 }

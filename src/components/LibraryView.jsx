@@ -7,6 +7,7 @@ import {
 } from '../data/models-catalog'
 import SigilModal from './SigilModal'
 import SkillModal from './SkillModal'
+import ConfirmDialog from './ConfirmDialog'
 
 const api = window.golem
 
@@ -16,6 +17,7 @@ const ALL_TAGS = ['general', 'coding', 'reasoning', 'vision', 'embedding']
 
 function InstalledTab({ models, hardware, onRefresh }) {
   const [deleting, setDeleting] = useState(null)
+  const [confirmTarget, setConfirmTarget] = useState(null) // null | model name
   const bestVramBytes = hardware?.gpus?.reduce((acc, g) => Math.max(acc, g.vramBytes), 0) ?? 0
 
   function estimateVram(modelName) {
@@ -89,7 +91,7 @@ function InstalledTab({ models, hardware, onRefresh }) {
             </button>
 
             <button
-              onClick={() => handleDelete(name)}
+              onClick={() => setConfirmTarget(name)}
               disabled={isDeleting}
               className="text-[11px] px-2.5 py-1 rounded-lg transition-colors disabled:opacity-40"
               style={{ background: 'rgba(220,70,70,0.08)', color: 'rgba(220,100,100,0.7)', border: '1px solid rgba(220,70,70,0.2)' }}
@@ -101,6 +103,16 @@ function InstalledTab({ models, hardware, onRefresh }) {
           </div>
         )
       })}
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Delete model?"
+          message={`"${confirmTarget}" will be removed and need to be re-downloaded to use again.`}
+          confirmLabel="Delete model"
+          onConfirm={() => { const name = confirmTarget; setConfirmTarget(null); handleDelete(name) }}
+          onCancel={() => setConfirmTarget(null)}
+        />
+      )}
     </div>
   )
 }
@@ -109,6 +121,7 @@ function InstalledTab({ models, hardware, onRefresh }) {
 
 function SigilsTab({ sigils, onNewChatWithSigil, onSigilsChange }) {
   const [modal, setModal] = useState(null) // null | { sigil: null|obj }
+  const [confirmTarget, setConfirmTarget] = useState(null) // null | sigil
 
   async function handleSave(id, name, content) {
     if (id) {
@@ -183,7 +196,7 @@ function SigilsTab({ sigils, onNewChatWithSigil, onSigilsChange }) {
                   <span className="material-symbols-outlined text-[15px]">edit</span>
                 </button>
                 <button
-                  onClick={() => handleDelete(sigil.id)}
+                  onClick={() => setConfirmTarget(sigil)}
                   className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                   style={{ color: 'rgba(220,100,100,0.7)', background: 'rgba(220,70,70,0.08)', border: '1px solid rgba(220,70,70,0.2)' }}
                   title="Delete"
@@ -203,6 +216,16 @@ function SigilsTab({ sigils, onNewChatWithSigil, onSigilsChange }) {
           onClose={() => setModal(null)}
         />
       )}
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Delete sigil?"
+          message={`"${confirmTarget.name}" will be permanently deleted.`}
+          confirmLabel="Delete"
+          onConfirm={() => { const id = confirmTarget.id; setConfirmTarget(null); handleDelete(id) }}
+          onCancel={() => setConfirmTarget(null)}
+        />
+      )}
     </div>
   )
 }
@@ -211,6 +234,7 @@ function SigilsTab({ sigils, onNewChatWithSigil, onSigilsChange }) {
 
 function SkillsTab({ skills, onNewChatWithSkill, onSkillsChange }) {
   const [modal, setModal] = useState(null) // null | 'new' | skillId
+  const [confirmTarget, setConfirmTarget] = useState(null) // null | skill
 
   async function handleDelete(id) {
     await api.db.deleteSkill(id)
@@ -292,7 +316,7 @@ function SkillsTab({ skills, onNewChatWithSkill, onSkillsChange }) {
                         <span className="material-symbols-outlined text-[15px]">edit</span>
                       </button>
                       <button
-                        onClick={() => handleDelete(skill.id)}
+                        onClick={() => setConfirmTarget(skill)}
                         className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                         style={{ color: 'rgba(220,100,100,0.7)', background: 'rgba(220,70,70,0.08)', border: '1px solid rgba(220,70,70,0.2)' }}
                         title="Delete"
@@ -313,6 +337,16 @@ function SkillsTab({ skills, onNewChatWithSkill, onSkillsChange }) {
           skillId={modal === 'new' ? null : modal}
           onClose={() => setModal(null)}
           onSaved={onSkillsChange}
+        />
+      )}
+
+      {confirmTarget && (
+        <ConfirmDialog
+          title="Delete skill?"
+          message={`"${confirmTarget.name}" will be permanently deleted.`}
+          confirmLabel="Delete"
+          onConfirm={() => { const id = confirmTarget.id; setConfirmTarget(null); handleDelete(id) }}
+          onCancel={() => setConfirmTarget(null)}
         />
       )}
     </div>

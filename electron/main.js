@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, globalShortcut } = require('electron')
+const { app, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage, globalShortcut, shell } = require('electron')
 const path = require('path')
 const http = require('http')
 const https = require('https')
@@ -52,6 +52,18 @@ function createWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, '..', 'dist', 'index.html'))
   }
+
+  // External links: open in the default browser, never inside the app window.
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://') || url.startsWith('http://')) shell.openExternal(url)
+    return { action: 'deny' }
+  })
+  mainWindow.webContents.on('will-navigate', (e, url) => {
+    const isInternal = isDev ? url.startsWith('http://localhost:5173') : url.startsWith('file://')
+    if (isInternal) return
+    e.preventDefault()
+    if (url.startsWith('https://') || url.startsWith('http://')) shell.openExternal(url)
+  })
 
   mainWindow.on('resize', () => {
     clearTimeout(resizeSaveTimer)

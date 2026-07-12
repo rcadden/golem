@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import ProjectSettingsModal from './ProjectSettingsModal'
+import ConfirmDialog from './ConfirmDialog'
 
 const ICON_SRC = '/icon.png'
 const api = window.golem
@@ -29,6 +30,7 @@ export default function Sidebar({
   const [projectMcpMap, setProjectMcpMap] = useState({})
   const [search, setSearch] = useState('')
   const [msgSearchResults, setMsgSearchResults] = useState([])
+  const [confirmAction, setConfirmAction] = useState(null) // null | { title, message, confirmLabel, onConfirm }
   const renameRef = useRef(null)
   const renameProjectRef = useRef(null)
   const searchRef = useRef(null)
@@ -618,7 +620,16 @@ export default function Sidebar({
                   )}
                   <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '2px 0' }} />
                   <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
-                    onClick={() => { onDeleteConv(convMenu.convId); setConvMenu(null) }}>
+                    onClick={() => {
+                      const convId = convMenu.convId
+                      setConvMenu(null)
+                      setConfirmAction({
+                        title: 'Delete conversation?',
+                        message: `"${conv?.title ?? 'Untitled'}" will be permanently deleted.`,
+                        confirmLabel: 'Delete',
+                        onConfirm: () => onDeleteConv(convId),
+                      })
+                    }}>
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                     Delete
                   </button>
@@ -663,7 +674,17 @@ export default function Sidebar({
                   </button>
                   <div style={{ borderTop: '1px solid var(--border-subtle)', margin: '2px 0' }} />
                   <button className="w-full flex items-center gap-2.5 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10 transition-colors"
-                    onClick={() => handleDeleteProject(projectMenu.projectId)}>
+                    onClick={() => {
+                      const projectId = projectMenu.projectId
+                      setProjectMenu(null)
+                      const count = proj?.conversations?.length ?? 0
+                      setConfirmAction({
+                        title: 'Delete project?',
+                        message: `"${proj?.name ?? 'Untitled'}" and its ${count} ${count === 1 ? 'conversation' : 'conversations'} will be permanently deleted.`,
+                        confirmLabel: 'Delete',
+                        onConfirm: () => handleDeleteProject(projectId),
+                      })
+                    }}>
                     <span className="material-symbols-outlined text-[16px]">delete</span>
                     Delete project
                   </button>
@@ -695,6 +716,17 @@ export default function Sidebar({
           />
         )
       })()}
+
+      {/* Delete confirmation */}
+      {confirmAction && (
+        <ConfirmDialog
+          title={confirmAction.title}
+          message={confirmAction.message}
+          confirmLabel={confirmAction.confirmLabel}
+          onConfirm={() => { confirmAction.onConfirm(); setConfirmAction(null) }}
+          onCancel={() => setConfirmAction(null)}
+        />
+      )}
 
     </>
   )
