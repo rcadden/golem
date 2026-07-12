@@ -100,6 +100,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
   const [streamStats, setStreamStats] = useState(null)   // { promptTokens, completionTokens, durationMs, ttftMs } — set on streamEnd
   const [elapsed, setElapsed] = useState(0)              // seconds since stream started, for live timer
   const [loopStatus, setLoopStatus] = useState(null)     // { reason, iterations } — set when tool-loop cap is hit
+  const [contextTrimmed, setContextTrimmed] = useState(null) // count of messages dropped to fit context window
   const [error, setError] = useState('')
   const [attachedFiles, setAttachedFiles] = useState([])
   const [runningModels, setRunningModels] = useState([]) // [{ name, size_vram }] from /api/ps
@@ -153,12 +154,17 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
         setConvParams({ temperature: null, numCtx: null })
       }
       api.ollama.getRunningModels().then(list => setRunningModels(list ?? [])).catch(() => {})
+      api.ollama.getActiveStream().then(activeId => {
+        if (activeId && activeId === conv?.id) setStreaming(true)
+      }).catch(() => {})
     }
     load()
   }, [conv?.id])
 
   useEffect(() => {
-    api.ollama.onChunk(chunk => {
+    api.ollama.onChunk(payload => {
+      if (payload?.conversationId !== conv?.id) return
+      const chunk = payload.content
       setLiveSegments(prev => {
         const next = [...prev]
         const last = next[next.length - 1]
@@ -172,12 +178,16 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     })
 
-    api.ollama.onToolCallStart(({ id, name, args }) => {
+    api.ollama.onToolCallStart(payload => {
+      if (payload?.conversationId !== conv?.id) return
+      const { id, name, args } = payload
       setLiveSegments(prev => [...prev, { type: 'tool', id, name, args, isRunning: true }])
       bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     })
 
-    api.ollama.onToolCallResult(({ id, result, isError }) => {
+    api.ollama.onToolCallResult(payload => {
+      if (payload?.conversationId !== conv?.id) return
+      const { id, result, isError } = payload
       setLiveSegments(prev => prev.map(s =>
         s.type === 'tool' && s.id === id
           ? { ...s, result, isError, isRunning: false }
@@ -186,12 +196,23 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     })
 
     api.ollama.onStreamStats(data => {
+      if (data?.conversationId !== conv?.id) return
       setStreamStats(data)
     })
 
-    api.ollama.onLoopStatus(setLoopStatus)
+    api.ollama.onLoopStatus(data => {
+      if (data?.conversationId !== conv?.id) return
+      setLoopStatus(data)
+    })
 
-    api.ollama.onStreamEnd(async err => {
+    api.ollama.onContextTrimmed(data => {
+      if (data?.conversationId !== conv?.id) return
+      setContextTrimmed(data.dropped)
+    })
+
+    api.ollama.onStreamEnd(async payload => {
+      if (payload?.conversationId !== conv?.id) return
+      const err = payload.error
       setStreaming(false)
       // Refresh running model list so the GPU/CPU badge stays current
       api.ollama.getRunningModels().then(list => setRunningModels(list ?? [])).catch(() => {})
@@ -232,6 +253,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
       api.ollama.offToolCallResult()
       api.ollama.offStreamStats()
       api.ollama.offLoopStatus()
+      api.ollama.offContextTrimmed()
     }
   }, [conv?.id])
 
@@ -375,6 +397,8 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     const baseContent = (text || input).trim()
     if (!baseContent && attachedFiles.length === 0) return
     if (streaming || !conv || !selectedModel) return
+    const activeStreamId = await api.ollama.getActiveStream()
+    if (activeStreamId) return
 
     const resolvedMentions = await resolveMentionsInText(baseContent)
     let content = baseContent
@@ -398,6 +422,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     setStreaming(true)
     setLiveSegments([])
     setLoopStatus(null)
+    setContextTrimmed(null)
 
     const payload = {
       model: selectedModel,
@@ -412,6 +437,8 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
 
   async function handleEditMessage(msgId, newContent) {
     if (streaming || !conv || !selectedModel) return
+    const activeStreamId = await api.ollama.getActiveStream()
+    if (activeStreamId) return
     const idx = messages.findIndex(m => m.id === msgId)
     if (idx === -1) return
 
@@ -433,6 +460,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     setStreaming(true)
     setLiveSegments([])
     setLoopStatus(null)
+    setContextTrimmed(null)
     await api.ollama.startStream({
       model: selectedModel,
       messages: serializeForOllama(remaining),
@@ -445,6 +473,8 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
 
   async function handleRetry() {
     if (streaming || !conv || !selectedModel) return
+    const activeStreamId = await api.ollama.getActiveStream()
+    if (activeStreamId) return
     // Drop everything after the last user message — that's the assistant's
     // most recent turn (which may include tool calls and tool results).
     const lastUserIdx = [...messages].map(m => m.role).lastIndexOf('user')
@@ -459,6 +489,7 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
     setStreaming(true)
     setLiveSegments([])
     setLoopStatus(null)
+    setContextTrimmed(null)
     const payload = {
       model: selectedModel,
       messages: serializeForOllama(remaining),
@@ -651,6 +682,19 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
             >
               <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>warning</span>
               Tool loop stopped after {loopStatus.iterations} iterations to prevent runaway chains
+            </div>
+          )}
+          {contextTrimmed !== null && (
+            <div
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-[11px] my-2"
+              style={{
+                background: 'rgba(234,179,8,0.08)',
+                border: '1px solid rgba(234,179,8,0.2)',
+                color: 'rgb(200,160,60)',
+              }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>warning</span>
+              Earlier messages trimmed to fit the context window ({contextTrimmed} dropped)
             </div>
           )}
           {error && (

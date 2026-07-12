@@ -14,6 +14,7 @@ const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
 let mainWindow
 let activeStreamController = null
+let activeStreamConversationId = null
 let resizeSaveTimer = null
 
 let tray = null
@@ -679,9 +680,57 @@ ipcMain.handle('db:getTelemetrySummary', () => db.getTelemetrySummary())
 
 const MAX_TOOL_ITERATIONS = 4
 
+// Trims the message array to fit within a char-based approximation of the model's
+// context budget, always preserving the system message (index 0) and never dropping
+// the most recent message. Returns { messages, dropped } — dropped is the count of
+// messages removed from the middle/older portion of the conversation.
+function trimToContextBudget(messages, numCtx) {
+  const CHARS_PER_TOKEN = 4
+  const charBudget = numCtx * CHARS_PER_TOKEN * 0.75
+
+  if (messages.length <= 1) return { messages, dropped: 0 }
+
+  const systemMsg = messages[0]
+  const rest = messages.slice(1)
+  const systemLen = (systemMsg.content || '').length
+
+  let remainingBudget = charBudget - systemLen
+  const kept = []
+  for (let i = rest.length - 1; i >= 0; i--) {
+    const msg = rest[i]
+    let len = (msg.content || '').length
+    if (msg.tool_calls) len += JSON.stringify(msg.tool_calls).length
+    if (kept.length === 0) {
+      // Never drop the most recent message, even if it alone exceeds budget.
+      kept.unshift(msg)
+      remainingBudget -= len
+      continue
+    }
+    if (len > remainingBudget) break
+    kept.unshift(msg)
+    remainingBudget -= len
+  }
+
+  // A 'tool' message can't be the first non-system message — it needs its
+  // preceding assistant tool_calls message to make sense to the model.
+  while (kept.length > 0 && kept[0].role === 'tool') {
+    kept.shift()
+  }
+
+  const dropped = rest.length - kept.length
+  if (dropped === 0) return { messages, dropped: 0 }
+
+  const trimmed = [
+    systemMsg,
+    { role: 'system', content: '[Earlier conversation trimmed to fit the context window.]' },
+    ...kept,
+  ]
+  return { messages: trimmed, dropped }
+}
+
 // One round-trip to Ollama. Streams content chunks via 'ollama:chunk' and resolves
 // with { content, toolCalls, promptTokens, completionTokens, ttftMs }.
-function streamOnce({ event, model, messages, toolSchemas, controller, streamStart, ttftRef, numCtx = 8192, temperature = 0.7 }) {
+function streamOnce({ event, model, messages, toolSchemas, controller, streamStart, ttftRef, numCtx = 8192, temperature = 0.7, conversationId = null }) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
       model,
@@ -715,7 +764,7 @@ function streamOnce({ event, model, messages, toolSchemas, controller, streamSta
             if (content) {
               if (!ttftRef.value) ttftRef.value = Date.now() - streamStart
               accumulatedContent += content
-              event.sender.send('ollama:chunk', content)
+              event.sender.send('ollama:chunk', { conversationId, content })
             }
             const calls = parsed?.message?.tool_calls
             if (Array.isArray(calls) && calls.length > 0) {
@@ -750,6 +799,8 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
   if (activeStreamController) activeStreamController.abort = true
   const controller = { abort: false }
   activeStreamController = controller
+  const conversationId = payload.conversationId ?? null
+  activeStreamConversationId = conversationId
 
   const project = payload.projectId ? db.getProject(payload.projectId) : null
   const conversation = payload.conversationId ? db.getConversation(payload.conversationId) : null
@@ -825,7 +876,13 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
   const toolSchemas = toolsEnabled ? tools.listSchemas(ctx) : []
 
   // Working message array — starts with system + history, grows with assistant/tool turns
-  const messages = [{ role: 'system', content: systemPrompt }, ...payload.messages]
+  let messages = [{ role: 'system', content: systemPrompt }, ...payload.messages]
+
+  const { messages: trimmedMessages, dropped } = trimToContextBudget(messages, numCtx)
+  messages = trimmedMessages
+  if (dropped > 0) {
+    event.sender.send('ollama:contextTrimmed', { conversationId, dropped })
+  }
 
   const streamStart = Date.now()
   const ttftRef = { value: 0 }
@@ -837,11 +894,11 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       const result = await streamOnce({
         event, model: payload.model, messages,
         toolSchemas, controller, streamStart, ttftRef,
-        numCtx, temperature,
+        numCtx, temperature, conversationId,
       })
 
       if (result.aborted) {
-        event.sender.send('ollama:streamEnd', null)
+        event.sender.send('ollama:streamEnd', { conversationId, error: null })
         return { ok: true, aborted: true }
       }
 
@@ -877,7 +934,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
           try { args = JSON.parse(rawArgs) } catch { args = {} }
         }
 
-        event.sender.send('ollama:tool_call_start', { id: callId, name, args })
+        event.sender.send('ollama:tool_call_start', { id: callId, name, args, conversationId })
 
         let resultPayload
         let isError = false
@@ -889,7 +946,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
         }
         const resultJson = JSON.stringify(resultPayload)
 
-        event.sender.send('ollama:tool_call_result', { id: callId, name, result: resultPayload, isError })
+        event.sender.send('ollama:tool_call_result', { id: callId, name, result: resultPayload, isError, conversationId })
 
         if (payload.conversationId) {
           db.addMessage(payload.conversationId, 'tool', resultJson, { toolCallId: callId })
@@ -898,7 +955,7 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       }
 
       if (controller.abort) {
-        event.sender.send('ollama:streamEnd', null)
+        event.sender.send('ollama:streamEnd', { conversationId, error: null })
         return { ok: true, aborted: true }
       }
 
@@ -906,8 +963,8 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       // message rather than silently dropping the conversation state
       if (iter === MAX_TOOL_ITERATIONS - 1) {
         const capMsg = '_[Tool-call iteration cap reached. Stopping to avoid runaway loops.]_'
-        event.sender.send('ollama:chunk', capMsg)
-        event.sender.send('ollama:loopStatus', { reason: 'cap_reached', iterations: MAX_TOOL_ITERATIONS })
+        event.sender.send('ollama:chunk', { conversationId, content: capMsg })
+        event.sender.send('ollama:loopStatus', { reason: 'cap_reached', iterations: MAX_TOOL_ITERATIONS, conversationId })
         if (payload.conversationId) {
           db.addMessage(payload.conversationId, 'assistant', capMsg)
         }
@@ -929,16 +986,22 @@ ipcMain.handle('ollama:startStream', async (event, payload) => {
       durationMs: Date.now() - streamStart,
       ttftMs: ttftRef.value,
       numCtx,
+      conversationId,
     })
-    event.sender.send('ollama:streamEnd', null)
+    event.sender.send('ollama:streamEnd', { conversationId, error: null })
     return { ok: true }
   } catch (err) {
-    event.sender.send('ollama:streamEnd', err.message || String(err))
+    event.sender.send('ollama:streamEnd', { conversationId, error: err.message || String(err) })
     return { ok: false, error: err.message || String(err) }
   } finally {
-    if (activeStreamController === controller) activeStreamController = null
+    if (activeStreamController === controller) {
+      activeStreamController = null
+      activeStreamConversationId = null
+    }
   }
 })
+
+ipcMain.handle('ollama:getActiveStream', () => activeStreamConversationId)
 
 ipcMain.on('ollama:stopStream', () => {
   if (activeStreamController) activeStreamController.abort = true
