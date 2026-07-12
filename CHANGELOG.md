@@ -4,6 +4,32 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.10.0] — 2026-07-12
+
+### Added
+- **Tool approval gate** — writing files, creating directories, git commits/pushes, and MCP tools now ask for permission before running (Allow / Always allow / Deny). Denials are shown to the model so it can adjust. Standing approvals are managed in a new Tool Permissions card in Settings.
+- **Library tabs** — the Library now hosts Models, Sigils, and Skills as tabs. Sigils and skills are card grids with launch, edit, delete, and create actions, freeing the sidebar for conversations.
+- **Project Settings modal** — directory sync, context window override, and MCP server associations moved out of the sidebar tree into a dedicated modal on the project menu.
+- **Context window management** — conversations that outgrow the context window are trimmed automatically with the system prompt always preserved, and a notice shows how many messages were dropped.
+- **Remote announcements** — version-targeted messages can be surfaced as dismissible chips in the title bar.
+- **Delete confirmations** — every destructive action (conversations, projects, sigils, skills, models, MCP servers) now asks first; deleting a project states how many conversations go with it.
+
+### Changed
+- Sidebar streamlined to conversations-first: New Chat, search, Pinned, Recent, and Projects. Sigil/Skill sections, the redundant Chat item, and the nonfunctional Help item are gone.
+- Empty-state suggestion cards now pre-fill their prompt instead of opening a blank chat, with a link to browse the Library.
+- Auto-scroll only follows the stream when you're already at the bottom — scrolling up to read no longer fights you.
+- Streaming events are scoped to their conversation, so switching chats mid-response no longer bleeds text into the wrong thread.
+
+### Fixed
+- Live file `@mentions` now actually read from disk (a missing import silently served stale synced copies).
+- External links in chat replies open in your default browser instead of navigating the app away.
+- Tray icon now appears in installed builds.
+- Message ordering can no longer scramble within tool-call turns.
+- Window resizing and rapid writes no longer rewrite the whole database on every tick (debounced persistence with flush on quit).
+- First message to an unrecognized model no longer freezes for up to 60 seconds probing tool support.
+
+---
+
 ## [0.9.5] — 2026-06-05
 
 ### Added
