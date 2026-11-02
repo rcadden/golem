@@ -1,12 +1,36 @@
 import BUNDLED_CATALOG from './models-catalog.json'
 
-// userVramBytes: best GPU VRAM in bytes from hardware.gpus[].vramBytes
-// modelVramGb: model's estimated VRAM requirement in GB
-export function calculateTier(modelVramGb, userVramBytes) {
-  if (!userVramBytes || userVramBytes === 0) return 'unknown'
-  const userVramGb = userVramBytes / (1024 ** 3)
-  if (modelVramGb <= userVramGb * 0.85) return 'great'
-  if (modelVramGb <= userVramGb * 1.3)  return 'ok'
+const GB = 1024 ** 3
+// Integrated GPUs report a small slice of shared memory and Ollama runs on CPU for them.
+const INTEGRATED_GPU = /intel\(r\)\s+(iris|uhd|hd)|radeon(\(tm\))?\s+graphics|microsoft basic|vega \d+ graphics/i
+const MIN_DISCRETE_VRAM_BYTES = 2 * GB
+
+// Decides what the model has to fit in: a discrete GPU's VRAM, or system RAM on CPU.
+// Returns { mode: 'gpu' | 'cpu' | 'unknown', vramBytes?, ramBytes?, name? }
+export function computeProfile(hardware) {
+  if (!hardware) return { mode: 'unknown' }
+  const gpu = (hardware.gpus ?? [])
+    .filter(g => g.vramBytes >= MIN_DISCRETE_VRAM_BYTES && !INTEGRATED_GPU.test(g.name))
+    .sort((a, b) => b.vramBytes - a.vramBytes)[0]
+  if (gpu) return { mode: 'gpu', vramBytes: gpu.vramBytes, name: gpu.name }
+  const ramBytes = hardware.ram?.totalBytes
+  if (ramBytes) return { mode: 'cpu', ramBytes, name: hardware.cpu?.model }
+  return { mode: 'unknown' }
+}
+
+// modelVramGb: model's estimated memory requirement in GB
+export function calculateTier(modelVramGb, profile) {
+  if (!profile || profile.mode === 'unknown') return 'unknown'
+  if (profile.mode === 'gpu') {
+    const vramGb = profile.vramBytes / GB
+    if (modelVramGb <= vramGb * 0.85) return 'great'
+    if (modelVramGb <= vramGb * 1.3)  return 'ok'
+    return 'no'
+  }
+  // CPU: speed, not just fit, is the limit — small absolute caps, scaled down on low-RAM machines.
+  const ramGb = profile.ramBytes / GB
+  if (modelVramGb <= Math.min(3,   ramGb * 0.35)) return 'great'
+  if (modelVramGb <= Math.min(6.5, ramGb * 0.6))  return 'ok'
   return 'no'
 }
 

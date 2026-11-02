@@ -1167,27 +1167,21 @@ ipcMain.handle('system:getHardwareInfo', async () => {
       })
       .filter(g => g.name)
   } catch {
-    // nvidia-smi not available — fall back to wmic
+    // nvidia-smi not available — query WMI via PowerShell (wmic is removed on Windows 11 24H2+)
     try {
       const raw = await new Promise((resolve, reject) => {
-        execFile('wmic', [
-          'path', 'win32_VideoController',
-          'get', 'Name,AdapterRAM',
-          '/format:csv',
-        ], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+        execFile('powershell', [
+          '-NoProfile', '-NonInteractive', '-Command',
+          'Get-CimInstance Win32_VideoController | Select-Object Name,AdapterRAM | ConvertTo-Json -Compress',
+        ], { encoding: 'utf8', timeout: 8000, windowsHide: true }, (err, stdout) => {
           if (err) reject(err)
           else resolve(stdout)
         })
       })
-      gpus = raw.split('\n')
-        .slice(1)
-        .map(line => line.trim().split(','))
-        .filter(parts => parts.length >= 3 && parts[2])
-        .map(parts => ({
-          name:      parts[2].trim(),
-          vramBytes: parseInt(parts[1]) || 0,
-        }))
-        .filter(g => g.name && g.name !== 'Name')
+      const parsed = JSON.parse(raw)
+      gpus = (Array.isArray(parsed) ? parsed : [parsed])
+        .map(g => ({ name: (g?.Name ?? '').trim(), vramBytes: Number(g?.AdapterRAM) || 0 }))
+        .filter(g => g.name)
     } catch {}
   }
 

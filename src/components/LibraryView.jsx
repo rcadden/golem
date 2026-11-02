@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  MODELS_CATALOG, calculateTier,
+  MODELS_CATALOG, calculateTier, computeProfile,
   TIER_LABEL, TIER_COLOR,
   TAG_LABEL, TAG_COLOR,
   TOOLS_COLOR,
@@ -18,7 +18,7 @@ const ALL_TAGS = ['general', 'coding', 'reasoning', 'vision', 'embedding']
 function InstalledTab({ models, hardware, onRefresh }) {
   const [deleting, setDeleting] = useState(null)
   const [confirmTarget, setConfirmTarget] = useState(null) // null | model name
-  const bestVramBytes = hardware?.gpus?.reduce((acc, g) => Math.max(acc, g.vramBytes), 0) ?? 0
+  const profile = computeProfile(hardware)
 
   function estimateVram(modelName) {
     const match = modelName.match(/:(\d+\.?\d*)b/i)
@@ -56,7 +56,7 @@ function InstalledTab({ models, hardware, onRefresh }) {
     <div className="flex flex-col gap-2 mt-2">
       {models.map(name => {
         const vram = estimateVram(name)
-        const tier = vram ? calculateTier(vram, bestVramBytes) : 'unknown'
+        const tier = vram ? calculateTier(vram, profile) : 'unknown'
         const tierC = TIER_COLOR[tier]
         const isDeleting = deleting === name
 
@@ -381,14 +381,14 @@ export default function LibraryView({
     setInstalledModels(models || [])
   }
 
-  const bestVramBytes = hardware?.gpus?.reduce((acc, g) => Math.max(acc, g.vramBytes), 0) ?? 0
+  const profile = computeProfile(hardware)
 
   function getTierForSize(vram_gb) {
-    return calculateTier(vram_gb, bestVramBytes)
+    return calculateTier(vram_gb, profile)
   }
 
   function getBestTier(model) {
-    const tiers = model.sizes.map(s => calculateTier(s.vram_gb, bestVramBytes))
+    const tiers = model.sizes.map(s => calculateTier(s.vram_gb, profile))
     if (tiers.includes('great')) return 'great'
     if (tiers.includes('ok'))    return 'ok'
     return 'no'
@@ -425,8 +425,10 @@ export default function LibraryView({
   const isInstalled = tag => installedModels.includes(tag)
   const isPulling   = tag => pulling && activePullModel === tag
 
-  const gpuName = hardware?.gpus?.[0]?.name
-  const gpuVramGb = bestVramBytes > 0 ? (bestVramBytes / (1024 ** 3)).toFixed(1) : null
+  const hardwareLine =
+    profile.mode === 'gpu' ? `${profile.name} · ${(profile.vramBytes / (1024 ** 3)).toFixed(1)} GB VRAM`
+    : profile.mode === 'cpu' ? `CPU only · ${(profile.ramBytes / (1024 ** 3)).toFixed(0)} GB RAM · expect slower speeds`
+    : null
 
   function FilterBtn({ state, setter, value, label }) {
     return (
@@ -482,9 +484,9 @@ export default function LibraryView({
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-[22px] font-bold text-on-surface" style={{ fontFamily: 'Hanken Grotesk' }}>Model Library</h1>
-            {gpuName && gpuVramGb && (
+            {hardwareLine && (
               <p className="text-[12px] mt-1" style={{ color: 'var(--text-muted)' }}>
-                {gpuName} · {gpuVramGb} GB VRAM
+                {hardwareLine}
               </p>
             )}
           </div>
