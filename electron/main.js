@@ -308,9 +308,14 @@ ipcMain.handle('memory:setPath', (_, filePath) => {
   db.setSetting('memory_path', filePath || '')
 })
 
+// Electron 43+ opens dialogs in Downloads; restore "remember the last folder".
+const lastDir = () => db.getSetting('last_dialog_dir', '') || undefined
+const rememberDir = (p) => { if (p) db.setSetting('last_dialog_dir', path.dirname(p)) }
+
 ipcMain.handle('memory:browsePath', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
     title: 'Select Memory File',
+    defaultPath: lastDir(),
     properties: ['openFile'],
     filters: [
       { name: 'Text & Markdown', extensions: ['txt', 'md'] },
@@ -318,21 +323,25 @@ ipcMain.handle('memory:browsePath', async () => {
     ],
   })
   if (result.canceled || !result.filePaths.length) return null
+  rememberDir(result.filePaths[0])
   return result.filePaths[0]
 })
 
 ipcMain.handle('dialog:saveFile', async (_, { defaultName, content }) => {
+  const dir = lastDir()
   const result = await dialog.showSaveDialog(mainWindow, {
-    defaultPath: defaultName,
+    defaultPath: dir ? path.join(dir, defaultName) : defaultName,
     filters: [{ name: 'Markdown', extensions: ['md'] }],
   })
   if (result.canceled || !result.filePath) return false
   fs.writeFileSync(result.filePath, content, 'utf8')
+  rememberDir(result.filePath)
   return true
 })
 
 ipcMain.handle('dialog:openFile', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
+    defaultPath: lastDir(),
     properties: ['openFile'],
     filters: [
       { name: 'Text & Code', extensions: ['txt', 'md', 'js', 'ts', 'jsx', 'tsx', 'py', 'json', 'css', 'html', 'xml', 'csv', 'log', 'yaml', 'yml', 'toml', 'sh', 'bat'] },
@@ -341,6 +350,7 @@ ipcMain.handle('dialog:openFile', async () => {
   })
   if (result.canceled || !result.filePaths.length) return null
   const filePath = result.filePaths[0]
+  rememberDir(filePath)
   try {
     const content = fs.readFileSync(filePath, 'utf8')
     return { name: path.basename(filePath), content }
@@ -351,9 +361,11 @@ ipcMain.handle('dialog:openFile', async () => {
 
 ipcMain.handle('dialog:openDirectory', async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
+    defaultPath: lastDir(),
     properties: ['openDirectory'],
   })
   if (result.canceled || !result.filePaths.length) return null
+  db.setSetting('last_dialog_dir', path.dirname(result.filePaths[0]))
   return result.filePaths[0]
 })
 
