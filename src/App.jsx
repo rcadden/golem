@@ -93,6 +93,13 @@ export default function App() {
     init()
   }, [])
 
+  async function handleStartOllama() {
+    const ready = await api.ollama.ensureRunning()
+    setOllamaReady(ready)
+    if (ready) setModels(await api.ollama.listModels())
+    return ready
+  }
+
   async function loadProjectsWithData() {
     const projs = await api.db.listProjects()
     return Promise.all(projs.map(async p => ({
@@ -325,7 +332,7 @@ export default function App() {
           sidebarOpen={false}
           onToggleSidebar={() => {}}
         />
-        <FirstRunView onInstallComplete={() => setOllamaInstalled(true)} />
+        <FirstRunView onInstallComplete={() => { setOllamaInstalled(true); handleStartOllama() }} />
       </div>
     )
   }
@@ -369,6 +376,8 @@ export default function App() {
               conv={activeConv}
               models={models}
               ollamaReady={ollamaReady}
+              onStartOllama={handleStartOllama}
+              onReinstallOllama={() => setOllamaInstalled(false)}
               onNewChat={handleNewChat}
               onConvUpdate={async () => {
                 await Promise.all([

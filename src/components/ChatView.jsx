@@ -82,10 +82,22 @@ const SUGGESTIONS = [
   { icon: 'code_blocks',   label: 'Review my code',    prompt: 'Review my code for improvements.' },
 ]
 
-export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvUpdate, onGolemAction, pendingInput, onConsumePendingInput, onNewChatWithPrompt, onOpenLibrary }) {
+export default function ChatView({ conv, models, ollamaReady, onStartOllama, onReinstallOllama, onNewChat, onConvUpdate, onGolemAction, pendingInput, onConsumePendingInput, onNewChatWithPrompt, onOpenLibrary }) {
   const [messages, setMessages] = useState([])
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
+  const [startingOllama, setStartingOllama] = useState(false)
+  const [startFailed, setStartFailed] = useState(false)
+
+  async function startOllama() {
+    setStartingOllama(true)
+    setStartFailed(false)
+    try {
+      setStartFailed(!(await onStartOllama()))
+    } finally {
+      setStartingOllama(false)
+    }
+  }
   // liveSegments: in-flight stream segments while a request is running.
   // Each segment is either { type: 'text', content } or
   // { type: 'tool', id, name, args, result?, isError?, isRunning }.
@@ -617,9 +629,24 @@ export default function ChatView({ conv, models, ollamaReady, onNewChat, onConvU
             <h2 className="font-display text-title-md font-bold text-on-surface mb-2" style={{ fontFamily: 'Hanken Grotesk' }}>
               Ollama not found
             </h2>
-            <p className="text-body-md text-on-surface-variant">
-              Run <code className="bg-surface-container-high px-2 py-0.5 rounded font-mono text-primary">ollama serve</code> in a terminal, then restart Golem.
+            <p className="text-body-md text-on-surface-variant mb-5">
+              Golem needs Ollama running to chat.
             </p>
+            <button
+              onClick={startOllama}
+              disabled={startingOllama}
+              className="px-5 py-2.5 rounded-xl bg-primary text-on-primary text-[13px] font-medium disabled:opacity-60"
+            >
+              {startingOllama ? 'Starting Ollama…' : 'Start Ollama'}
+            </button>
+            {startFailed && (
+              <div className="mt-4">
+                <p className="text-body-sm text-error mb-2">Couldn't start Ollama.</p>
+                <button onClick={onReinstallOllama} className="text-body-sm text-primary underline">
+                  Reinstall Ollama
+                </button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col items-center text-center max-w-2xl w-full">
