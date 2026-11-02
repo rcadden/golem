@@ -44,5 +44,5 @@
   "devstral-2", "command-a", "marco-o1", "command-r7b-arabic", "cogito-2.1",
   "functiongemma", "gpt-oss-safeguard", "nemotron-cascade-2", "granite4.1",
   "deepseek-v4-flash", "deepseek-v4-pro", "kimi-k2", "mistral-large-3",
-  "medgemma", "mistral-medium-3.5", "medgemma1.5", "laguna-xs.2"
+  "medgemma", "mistral-medium-3.5", "medgemma1.5", "laguna-xs.2", "lfm2.5", "nemotron-3-ultra"
 ]

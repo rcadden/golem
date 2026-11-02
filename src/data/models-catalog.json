@@ -355,6 +355,19 @@
     ]
   },
   {
+    "id": "lfm2.5",
+    "name": "LFM 2.5",
+    "family": "Liquid AI",
+    "description": "Liquid AI's agent-focused hybrid models for on-device use. The 8B is a mixture-of-experts that activates only about 1B parameters per token, so it runs fast on CPU-only machines; the 24B reasons before every answer. Strong tool calling.",
+    "tags": ["general", "reasoning"],
+    "tools": true,
+    "context_k": 128,
+    "sizes": [
+      { "tag": "lfm2.5:8b",  "label": "8B (1B active)",  "params_b": 8,  "vram_gb": 6.0 },
+      { "tag": "lfm2.5:24b", "label": "24B (2B active)", "params_b": 24, "vram_gb": 16 }
+    ]
+  },
+  {
     "id": "phi4-mini",
     "name": "Phi 4 Mini",
     "family": "Microsoft",
