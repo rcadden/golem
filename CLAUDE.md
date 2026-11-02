@@ -4,7 +4,7 @@
 A fast, private, local-first AI chat desktop app powered by Ollama. No cloud, no accounts, no subscriptions.
 
 ## Tech Stack
-- **Runtime:** Electron 33
+- **Runtime:** Electron 45 (upgraded from 33 on 2026-11-02, superseding "Electron 33"; electron-builder 26)
 - **UI:** React 19 + Vite 5 + Tailwind CSS 3
 - **Data:** sql.js (WASM SQLite) — `app.getPath('userData')` in production, `data/` in dev
 - **AI:** Ollama (local streaming via Node.js http)
@@ -66,5 +66,11 @@ Use `/build` to step through a guided release: version bump, build, commit, tag.
 ## Lessons Learned
 - `sql.js` requires `asarUnpack: ["node_modules/sql.js/dist/**"]` — WASM won't load from inside the asar archive
 - Use `app.isPackaged` to branch between dev paths and `process.resourcesPath` production paths
+- *(2026-11-02)* Electron 33 was ~12 majors behind and out of security support. Upgrading to 45 needed no code changes beyond the dialogs below: the preload only requires `electron`, the build is x64-only, and the renderer uses `navigator.clipboard`. Check those three first on any future major bump (45 removed sandboxed-preload shims, 44 dropped ia32, 44 removed renderer `clipboard`).
+- *(2026-11-02)* Electron 43+ opens file dialogs in Downloads instead of the last folder. Dialogs in `electron/main.js` now pass `defaultPath` from the `last_dialog_dir` setting.
+- *(2026-11-02)* `child_process.spawn` of a missing exe emits an async `error` event. Unhandled, it becomes a fatal "JavaScript error in the main process" dialog. Every `spawn` needs an `error` handler (found when Ollama was not installed).
+- *(2026-11-02)* `wmic` is removed on Windows 11 24H2+. Use `Get-CimInstance` via PowerShell for hardware queries. Model tiers (`computeProfile`/`calculateTier` in `src/data/models-catalog.js`) use VRAM for discrete GPUs and system RAM for CPU-only machines (great <= 3 GB, ok <= 6.5 GB). VRAM-only tiering left integrated-GPU users with an empty "Runs great" list.
+- *(2026-11-02)* Never show the user a terminal command for basic setup. Ollama start/install goes through the in-app Start Ollama / Reinstall buttons.
+- *(2026-11-02)* An unpacked `npm run pack` build logs `app-update.yml` ENOENT from the updater. This is expected, since only the installer build ships the feed. Quit the app before re-packing or the build fails with EPERM on a locked DLL.
 - Nested `<button>` inside `<button>` is invalid HTML — use sibling absolute-positioned elements for hover actions (e.g., three-dots menu in sidebar)
 - `group/name` scoped Tailwind hover works well for sibling targets in the same component
