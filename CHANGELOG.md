@@ -4,6 +4,21 @@ All notable changes to Golem are documented here.
 
 ---
 
+## [0.10.1] — 2026-11-02
+
+### Changed
+- **Electron 33 → 45.** The old runtime was far out of security support. Production dependencies updated too (12 known vulnerabilities → 0), including the MCP SDK, SQLite engine and React.
+- Model library now judges "Runs great" / "Might be OK" by system RAM on machines without a dedicated GPU (great ≤ 3 GB, OK ≤ 6.5 GB), and shows "CPU only · expect slower speeds" in the header. Previously these machines saw empty lists.
+- Open/save dialogs remember the last folder you used.
+
+### Added
+- LFM 2.5 (8B and 24B) in the model catalog.
+
+### Fixed
+- Launching without Ollama installed no longer shows a fatal error dialog.
+- "Ollama not found" now offers a **Start Ollama** button (and Reinstall if that fails) instead of terminal instructions.
+- GPU detection works on Windows 11 24H2+, where `wmic` no longer exists.
+
 ## [0.10.0] — 2026-07-12
 
 ### Added
