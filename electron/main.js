@@ -629,8 +629,12 @@ ipcMain.handle('ollama:waitForReady', async () => {
 ipcMain.handle('ollama:ensureRunning', async () => {
   if (await isOllamaReady()) return true
   const exe = findOllamaExe()
-  spawn(exe, [], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
-  for (let i = 0; i < 30; i++) {
+  // Ollama not installed: spawn emits 'error' asynchronously; unhandled, it surfaces as a fatal dialog.
+  let spawnFailed = false
+  const proc = spawn(exe, [], { detached: true, stdio: 'ignore', windowsHide: true })
+  proc.on('error', err => { spawnFailed = true; console.error('[ollama] spawn failed:', err.message) })
+  proc.unref()
+  for (let i = 0; i < 30 && !spawnFailed; i++) {
     await new Promise(r => setTimeout(r, 500))
     if (await isOllamaReady()) return true
   }
